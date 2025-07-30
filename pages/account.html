@@ -1,0 +1,70 @@
+<div class="container py-3">
+
+  <!-- Card 1: Avatar + email -->
+  <div class="card mb-3">
+    <div class="card-body d-flex align-items-center">
+      <img src="/assets/user.png" alt="avatar" width="48" height="48" class="rounded-circle mr-3">
+      <div>
+        <div class="font-weight-bold">Tool.ai</div>
+        <div id="user-email" class="text-muted small">email@domain.com</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 2: Gói đang dùng -->
+  <div class="card mb-3">
+    <div class="card-body d-flex justify-content-between align-items-center">
+      <div>
+        <div><strong id="package-name">Gói Premium</strong></div>
+        <div class="text-muted small" id="package-expired">Hết hạn: 01/08/2025</div>
+        <div class="text-muted small" id="package-turns">Lượt hôm nay: 5/100</div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="loadPage('packages')">Nâng cấp</button>
+    </div>
+  </div>
+
+  <!-- Card 3: Số xu -->
+  <div class="card mb-4">
+    <div class="card-body d-flex justify-content-between align-items-center">
+      <div class="font-weight-bold">Số xu hiện tại</div>
+      <div id="xu">0</div>
+    </div>
+  </div>
+
+  <!-- Menu -->
+  <div class="list-group">
+    <button class="list-group-item list-group-item-action" onclick="loadPage('history')">
+      <i class="fas fa-clock mr-2"></i> Lịch sử giao dịch
+    </button>
+    <button class="list-group-item list-group-item-action text-danger" onclick="logout()">
+      <i class="fas fa-sign-out-alt mr-2"></i> Đăng xuất
+    </button>
+  </div>
+
+</div>
+
+<script>
+  function renderAccountInfo(data) {
+    const { email, xu, package: pkg, trial_used } = data;
+    const expired = pkg.expired_at ? formatDateTimeVN(pkg.expired_at) : "Không có";
+
+    document.getElementById("user-email").innerText = email;
+    document.getElementById("package-name").innerText = pkg.name;
+    document.getElementById("package-expired").innerText = "Hết hạn: " + expired;
+    document.getElementById("package-turns").innerText = `Lượt hôm nay: ${pkg.turns_used_today || 0}/${pkg.max_turns_per_day || 0}`;
+    document.getElementById("xu").innerText = xu.toLocaleString();
+  }
+
+  function logout() {
+    //localStorage.clear();
+    clearLocalStorage(["deviceId"]);
+    window.location.href = "index.html";
+  }
+
+    loadAccountInfo().then(data => {
+        if (data) 
+            renderAccountInfo(data);
+        else 
+            document.getElementById("account-info").innerHTML = "<p class='text-danger'>Không thể tải thông tin tài khoản.</p>";
+    });
+</script>

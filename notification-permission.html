@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cho phép nhận thông báo</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" />
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      padding: 2rem 1rem;
+      background: #f8f9fa;
+      color: #333;
+    }
+    .card {
+      border: none;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    }
+    .btn {
+      font-size: 1.1rem;
+      padding: 12px 20px;
+      border-radius: 8px;
+    }
+    .alert {
+      font-size: 0.95rem;
+    }
+    ul {
+      padding-left: 1.2rem;
+      text-align: left;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="card p-4">
+      <div class="text-center">
+        <img src="/assets/ic_launcher_round.png" alt="Tool AI" style="width: 80px; height: 80px;" class="mb-3">
+        <h5><strong>Tool AI cần quyền gửi thông báo</strong></h5>
+        <p class="mb-4">Để hiển thị kết quả kịp thời, xin hãy cho phép gửi thông báo.</p>
+        <button id="btn-allow" class="btn btn-primary btn-block">🎯 Cho phép thông báo</button>
+      </div>
+    </div>
+
+    <div id="denied-message" class="alert alert-danger mt-4 hidden text-center">
+      <p><strong>❌ Bạn đã từ chối thông báo.</strong></p>
+      <p>Vui lòng bật lại quyền trong <strong>cài đặt trình duyệt</strong> để tiếp tục sử dụng Tool AI.</p>
+      <ul>
+        <li><strong>Chrome:</strong> Cài đặt → Quyền → Thông báo → Cho phép với trang này</li>
+        <li><strong>Safari:</strong> Preferences → Websites → Notifications</li>
+      </ul>
+    </div>
+  </div>
+
+  <script src="js/utils.js"></script>
+  <script>
+    document.getElementById('btn-allow').addEventListener('click', async () => {
+      try {
+        const permission = await Notification.requestPermission();
+
+        if (permission === 'granted') {
+          console.log("✅ Quyền đã được cấp");
+          await registerPush();
+          window.location.href = 'dashboard.html?page=tool';
+        } else if (permission === 'denied') {
+          document.getElementById('denied-message').classList.remove('hidden');
+        }
+      } catch (err) {
+        console.error('Lỗi xin quyền:', err);
+      }
+    });
+
+    async function registerPush() {
+      if (!('serviceWorker' in navigator)) return;
+
+      const reg = await navigator.serviceWorker.register('/service-worker.js');
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array('BBeZbEwXml_v93n0caqGDxOEdX8WMjFMc018zOtujFo-w6mTLDWDqXqGot4CoyFz0VJUKiYCA6TmDUq9Bk4964U')
+      });
+
+      const token = localStorage.getItem('token');
+      const deviceId = localStorage.getItem('deviceId');
+
+      await fetch(getUrl() + '/api/auth/save-web-subscription', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer ' + token,
+          'x-device-id': deviceId
+        },
+        body: JSON.stringify({
+          platform: 'web',
+          subscription: sub
+        })
+      });
+
+      console.log('✅ Đã đăng ký subscription thành công');
+    }
+
+    function urlBase64ToUint8Array(base64String) {
+      const padding = '='.repeat((4 - base64String.length % 4) % 4);
+      const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+      const rawData = atob(base64);
+      return new Uint8Array([...rawData].map(c => c.charCodeAt(0)));
+    }
+
+    function getUrl() {
+      return location.origin;
+    }
+  </script>
+</body>
+</html>

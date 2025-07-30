@@ -1,0 +1,116 @@
+<div class="container py-3">
+  <div id="transaction-list"></div>
+</div>
+
+<script>
+// Icon theo trạng thái
+function getStatusIcon(status) {
+  switch (status) {
+    case 'success': return '<i class="fas fa-check-circle text-success"></i>';
+    case 'pending': return '<i class="fas fa-hourglass-half text-warning"></i>';
+    case 'failed':  return '<i class="fas fa-times-circle text-danger"></i>';
+    default:        return '<i class="fas fa-question-circle text-secondary"></i>';
+  }
+}
+
+function getStatusText(status) {
+  switch (status) {
+    case 'success': return 'Thành công';
+    case 'pending': return 'Đang xử lý';
+    case 'failed':  return 'Thất bại';
+    default:        return '';
+  }
+}
+
+
+function getTypeText(status) {
+  switch (status) {
+    case 'payment': return 'Nạp QR';
+    case 'purchase': return '📦 Nâng cấp';
+    case 'bonus':  return '🎁 Tặng thêm';
+    default:        return '';
+  }
+}
+
+function renderTransaction(tx) {
+  const sign = tx.amount > 0 ? '+' : '-';
+  const amount = Math.abs(tx.amount);
+  return `
+    <div class="card mb-2" onclick="showTransactionDetail(${tx.id})" style="cursor: pointer;">
+      <div class="card-body d-flex align-items-center">
+        <div class="mr-3">${getStatusIcon(tx.status)}</div>
+        <div class="flex-grow-1">
+          <div><strong>${getTypeText(tx.type)}</strong></div>
+          <div class="text-muted small">${formatDateTimeVN(tx.created_at)}</div>
+          <div class="small">Trạng thái: <span class="text-capitalize">${getStatusText(tx.status)}</span></div>
+        </div>
+        <div class="ml-3 text-${sign === '+' ? 'success' : 'danger'} font-weight-bold">
+          ${sign}${formatThousandsVN(amount)} xu
+        </div>
+      </div>
+    </div>
+  `;
+}
+var transactionCache = []; // toàn cục
+
+async function loadTransactionHistory() {
+  try {
+    showLoading();
+    const token = localStorage.getItem("accessToken");
+    const deviceId = localStorage.getItem("deviceId");
+    const res = await fetch(getUrl() + "/api/balance/logs", {
+      headers: {
+        Authorization: "Bearer " + token,
+        "x-device-id": deviceId
+      }
+    });
+    transactionCache = await res.json(); // ✅ lưu cache
+    
+    const html = transactionCache.map(renderTransaction).join('');
+    document.getElementById("transaction-list").innerHTML = html;
+  
+  } catch (err) {
+    console.error("[loadTransactionHistory] Lỗi:", err);
+  }
+  finally {
+    hideLoading();
+  }
+}
+function showTransactionDetail(id) {
+  const tx = transactionCache.find(t => t.id == id);
+  if (!tx) return showAlert("Không tìm thấy giao dịch!");
+
+  const html = `
+    <div class="card mt-3">
+      <div class="card-body">
+        <h5 class="card-title">Chi tiết giao dịch</h5>
+        <p><strong>TXID:</strong> ${tx.id}</p>
+        <p><strong>Loại giao dịch:</strong> ${getTypeText(tx.type)}</p>
+        <p><strong>Thời gian:</strong> ${formatDateTimeVN(tx.created_at)}</p>
+        <p><strong>Trạng thái:</strong> <span class="text-capitalize">${getStatusText(tx.status)}</span></p>
+        <div class="mt-3 text-center">
+          <button class="btn btn-outline-secondary btn-sm" onclick="hideTransactionDetail()">Đóng</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const detailEl = document.createElement("div");
+  detailEl.id = "transaction-detail-popup";
+  detailEl.style.position = "fixed";
+  detailEl.style.top = "0";
+  detailEl.style.left = "0";
+  detailEl.style.width = "100%";
+  detailEl.style.height = "100%";
+  detailEl.style.backgroundColor = "rgba(0, 0, 0, 0.5)";
+  detailEl.style.zIndex = "9999";
+  detailEl.innerHTML = `<div class="container mt-5">${html}</div>`;
+
+  document.body.appendChild(detailEl);
+}
+function hideTransactionDetail() {
+  const popup = document.getElementById("transaction-detail-popup");
+  if (popup) popup.remove();
+}
+loadTransactionHistory();
+</script>

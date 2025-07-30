@@ -1,0 +1,168 @@
+<!-- Card 3: Số xu -->
+<div class="card mb-4">
+    <div class="card-body d-flex justify-content-between align-items-center">
+        <div class="font-weight-bold">Số xu hiện tại</div>
+        <div id="xu">0</div>
+    </div>
+</div>
+
+
+<!-- Card 2: Gói đang dùng -->
+<div class="card mb-3">
+    <div class="card-body d-flex justify-content-between align-items-center">
+        <div>
+            <div><strong id="package-name">Gói Premium</strong></div>
+            <div class="text-muted small" id="package-expired">Hết hạn: 01/08/2025</div>
+            <div class="text-muted small" id="package-turns">Lượt hôm nay: 5/100</div>
+        </div>
+    </div>
+</div>
+
+<div class="scroll-wrapper px-2">
+    <div id="package-list" class="scroll-container d-flex flex-nowrap"></div>
+</div>
+
+<script>
+
+    loadPackages().then(data => {
+        if (data) {
+            renderPackages(data);
+            _packageList = data;
+        }
+        else
+            document.getElementById("package-list").innerHTML = "Lỗi không load được dữ liệu";
+    });
+
+    function renderPackages(packages) {
+        const html = packages.map(pkg => {
+            var name = pkg.name;
+            if (pkg.is_best_saler == "1") {
+                name = name + " (⭐️ bán chạy)";
+            }
+
+            if (pkg.is_gift == "1") {
+                name = name + " (🎁 bí kíp)";
+            }
+            
+            return `
+                <div class="card shadow-sm" style="min-width: 250px; background-color: ${pkg.bg_color || '#343a40'};">
+                    <div class="card-body">
+                    <h5 class="card-title" style="color: ${pkg.color || '#fff'}">${name}</h5>` +
+                (pkg.price_2 > 0 ? `
+                    <p class="card-text h6" style="text-decoration: line-through">${formatThousandsVNXu(pkg.price_2) || ''}</p>` : ``) + `
+                    <p class="card-text text-danger h4">${formatThousandsVNXu(pkg.price) || ''}</p>
+                    <p class="card-text h6">${getExpiredInfo(pkg) || ''}</p>
+                    <p class="card-text">${getDescription(pkg) || ''}</p>
+                    <div class="text-center">
+                        <button class="btn btn-sm text-light" style="background-color: ${pkg.color || '#fff'}" onclick="xacNhanThanhToan('${pkg.id}')">Nâng cấp ngay</button>
+                        </div>
+                    </div>
+                </div>
+                `;
+        }).join("");
+
+        document.getElementById("package-list").innerHTML = html;
+    }
+
+    function xacNhanThanhToan(goiId) {
+
+        const goi = _packageList.find(p => p.id == goiId);
+        if (!goi) return;
+        if (confirm(`Xác nhận nâng cấp gói: ${goi.name} với giá ${(goi.price / 1000).toLocaleString()}k xu?`)) {
+            //window.location.href = `payment.html?goi=${goiId}`;
+            loadPage('payment', { id: goiId });
+        }
+    }
+
+    function napXu() {
+        const current = parseInt(localStorage.getItem("xu") || "0");
+        localStorage.setItem("xu", current + 5000000); // +5000k xu
+        //renderPackages();
+    }
+
+    function muaGoi(goiId) {
+        const xu = parseInt(localStorage.getItem("xu") || "0");
+        const goi = packages.find(p => p.id === goiId);
+        if (!goi) return;
+
+        if (xu < goi.price) {
+            showAlert("Bạn không đủ xu để nâng cấp.");
+            return;
+        }
+
+        // Trừ xu và lưu gói
+        localStorage.setItem("xu", xu - goi.price);
+        const now = new Date().toISOString();
+        localStorage.setItem("goiDaMua", JSON.stringify({
+            id: goi.id,
+            name: goi.name,
+            expiresAt: new Date(Date.now() + goi.duration * 86400000).toISOString(),
+            muaLuc: now
+        }));
+        showAlert("Nâng cấp thành công: " + goi.name);
+        //renderPackages();
+    }
+
+    loadAccountInfo().then(data => {
+        if (data)
+            renderAccountInfo(data);
+        else
+            document.getElementById("account-info").innerHTML = "<p class='text-danger'>Không thể tải thông tin tài khoản.</p>";
+    });
+    function renderAccountInfo(data) {
+        const { email, xu, package: pkg, trial_used } = data;
+        const expired = pkg.expired_at ? formatDateTimeVN(pkg.expired_at) : "Không có";
+
+        document.getElementById("package-name").innerText = pkg.name;
+        document.getElementById("package-expired").innerText = "Hết hạn: " + expired;
+        document.getElementById("package-turns").innerText = `Lượt hôm nay: ${pkg.turns_used_today || 0}/${pkg.max_turns_per_day || 0}`;
+        document.getElementById("xu").innerText = xu.toLocaleString();
+    }
+    function getDescription(pkg) {
+        let description = pkg.description;
+
+        if (description.includes("{{gateways_str}}")) {
+            let gatewaysStr = "";
+
+            if (pkg.gateways.length > 1) {
+                gatewaysStr = "các cổng game " + pkg.gateways.join(", ");
+            } else if (pkg.gateways.length === 1) {
+                gatewaysStr = "cổng game " + pkg.gateways[0];
+            }
+
+            description = description.replace("{{gateways_str}}", gatewaysStr);
+        }
+
+        let useOneDay = "";
+
+        if (description.includes("{{duration_days_str}}")) {
+            let durationDaysStr = "";
+
+            if (pkg.duration_days > 1) {
+                durationDaysStr = pkg.duration_days + " ngày";
+            } else if (pkg.duration_days === 1) {
+                durationDaysStr = "24 giờ";
+                useOneDay = ", (Lưu ý: chỉ dùng trong 24 giờ)";
+            }
+
+            description = description.replace("{{duration_days_str}}", durationDaysStr);
+        }
+
+        if (description.includes("{{max_turns_per_day_str}}")) {
+            let maxTurnsStr = "";
+
+            if (pkg.max_turns_per_day > 0) {
+                maxTurnsStr = pkg.max_turns_per_day + " ván/ngày" + useOneDay;
+            } else {
+                maxTurnsStr = "không giới hạn";
+            }
+
+            description = description.replace("{{max_turns_per_day_str}}", maxTurnsStr);
+        }
+
+        return description;
+    }
+    function getExpiredInfo(pkg) {
+        return "Sử dụng " + pkg.duration_days + " ngày - " + pkg.max_turns_per_day + " lượt/ngày";
+    }
+</script>

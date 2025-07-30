@@ -1,0 +1,196 @@
+<div class="container py-4">
+    <!-- Phần 1: Thông tin gói -->
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5 class="card-title">Gói bạn chọn</h5>
+            <p><strong id="package-name">---</strong></p>
+            <p>Giá: <span id="package-price">---</span></p>
+        </div>
+    </div>
+
+    <!-- Phần 2: Mã QR và thông tin chuyển khoản -->
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5 class="card-title">Quét mã QR thanh toán</h5>
+            <div class="text-center mb-3">
+                <img id="qr-image" src="/assets/qr.png" alt="QR Code" style="max-width: 200px;">
+            </div>
+            <p class="text-center">--- hoặc chuyển khoản ---</p>
+            <ul class="list-group">
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    Ngân hàng:
+                    <span>
+                        <span id="bank-name">---</span>
+                        <i class="fas fa-copy ml-2" onclick="copyText('bank-name')"></i>
+                    </span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    Số tài khoản:
+                    <span>
+                        <span id="bank-account">---</span>
+                        <i class="fas fa-copy ml-2" onclick="copyText('bank-account')"></i>
+                    </span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    Nội dung:
+                    <span>
+                        <span id="transfer-content">---</span>
+                        <i class="fas fa-copy ml-2" onclick="copyText('transfer-content')"></i>
+                    </span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    Số tiền:
+                    <span>
+                        <span id="amount">---</span> đ
+                        <i class="fas fa-copy ml-2" onclick="copyText('amount')"></i>
+                    </span>
+                </li>
+            </ul>
+        </div>
+    </div>
+    <div class="text-center mt-3 text-danger font-weight-bold">
+        Thời gian còn lại: <span id="countdown">05:00</span>
+
+        <!-- Phần 3: Lưu ý và nút xác nhận -->
+        <div class="alert alert-warning text-center mt-3">
+            Vui lòng chuyển khoản đúng nội dung và chờ duyệt tự động trong vài phút.<br>
+            Nếu đã chuyển, hãy nhấn nút bên dưới để xác nhận.
+        </div>
+
+        <div class="text-center">
+            <button class="btn btn-success btn-block" onclick="confirmPayment()">
+                Tôi đã chuyển khoản rồi
+            </button>
+        </div>
+    </div>
+</div>
+<!-- KHÔNG thay đổi giao diện HTML bạn đã gửi -->
+
+<script>
+    var queryParams = new URLSearchParams(window.location.search);
+    var packageId = parseInt(queryParams.get('id'));
+    var socket;
+    var socketTimeout;
+    var isPaymentConfirmed = false;
+    var countdownSeconds = 300; // 5 phút
+    var countdownInterval = null;
+
+    async function copyText(id) {
+        const text = document.getElementById(id).innerText;
+        await navigator.clipboard.writeText(text);
+        showAlert('Đã sao chép: ' + text);
+    }
+
+    async function getPackageById(id) {
+        let cached = JSON.parse(localStorage.getItem("cachedPackages") || "[]");
+        if (!Array.isArray(cached) || cached.length === 0) {
+            await loadPackages(true);
+            cached = JSON.parse(localStorage.getItem("cachedPackages") || "[]");
+        }
+        return cached.find(p => p.id == id);
+    }
+
+    async function confirmPayment() {
+        isPaymentConfirmed = true;
+        if (socket) {
+            socket.disconnect();
+            clearTimeout(socketTimeout);
+        }
+        showAlert("Vui lòng chờ xác nhận giao dịch trong vài phút.");
+        loadPage('history');
+    }
+
+    function startCountdown() {
+        updateCountdownDisplay();
+
+        countdownInterval = setInterval(() => {
+            countdownSeconds--;
+            updateCountdownDisplay();
+
+            if (countdownSeconds <= 0) {
+                clearInterval(countdownInterval);
+                $('#countdown').text("Hết thời gian");
+
+                if (socket && socket.connected) {
+                    socket.disconnect();
+                    console.log("⏱️ Socket đã ngắt sau 5 phút.");
+                }
+            }
+        }, 1000);
+    }
+
+    function updateCountdownDisplay() {
+        const min = String(Math.floor(countdownSeconds / 60)).padStart(2, '0');
+        const sec = String(countdownSeconds % 60).padStart(2, '0');
+        $('#countdown').text(`${min}:${sec}`);
+    }
+
+    function startPaymentSocket(txid) {
+        if (socket) socket.disconnect();
+
+        socket = io(getUrl());
+
+        socket.emit("join_payment_room", txid);
+
+        socket.on("payment_result", (data) => {
+            if (data.is_success === true) {
+                isPaymentConfirmed = true;
+                if (socket) socket.disconnect();
+                clearTimeout(socketTimeout);
+                clearInterval(countdownInterval);
+                showAlert("💰 Giao dịch thành công! Chuyển sang lịch sử để xem trạng thái.");
+                loadPage("history");
+            } else {
+                showAlert(data.message || "Giao dịch thất bại.");
+                loadPage("history");
+            }
+        });
+
+        // ⏱️ Đặt timeout ngắt socket sau 5 phút
+        socketTimeout = setTimeout(() => {
+            if (!isPaymentConfirmed && socket) {
+                socket.disconnect();
+                console.log("🛑 Socket tự động ngắt sau 5 phút.");
+            }
+        }, 5 * 60 * 1000);
+
+        startCountdown();
+    }
+
+    // Load dữ liệu khi vào trang
+    (async function () {
+        try {
+            if (!packageId) return showAlert("Thiếu thông tin gói.");
+
+            const pkg = await getPackageById(packageId);
+            if (!pkg) return showAlert("Không tìm thấy gói!");
+
+            document.getElementById("package-name").innerText = pkg.name;
+            document.getElementById("package-price").innerText = formatThousandsVNXu(pkg.price);
+
+            showLoading();
+            const payment = await fetchPaymentInfo(packageId, pkg.price);
+
+            document.getElementById("qr-image").src = payment.qr_url;
+            document.getElementById("bank-name").innerText = payment.bank;
+            document.getElementById("bank-account").innerText = payment.account_number;
+            document.getElementById("transfer-content").innerText = payment.content;
+            document.getElementById("amount").innerText = formatThousandsVN(pkg.price);
+
+            startPaymentSocket(payment.tranid);
+        } catch (err) {
+            showAlert("Có lỗi xảy ra: " + err.message);
+        } finally {
+            hideLoading();
+        }
+    })();
+
+    // Cảnh báo khi rời trang nếu chưa xác nhận thanh toán
+    window.addEventListener('beforeunload', function (e) {
+        if (!isPaymentConfirmed) {
+            const confirmationMessage = '⚠️ Bạn có chắc muốn rời khỏi khi chưa hoàn tất thanh toán?';
+            (e || window.event).returnValue = confirmationMessage;
+            return confirmationMessage;
+        }
+    });
+</script>
