@@ -8,7 +8,7 @@ function handleLogin(response) {
     headers: {
       "Content-Type": "application/json"
     },
-    body: JSON.stringify({ idToken, deviceId })
+    body: JSON.stringify({ idToken, deviceId, platform: 1 })
   })
     .then(res => res.json())
     .then(data => {
@@ -33,7 +33,8 @@ function handleLogin(response) {
     })
     .catch(err => {
       console.error("Lỗi đăng nhập:", err);
-      alert("Lỗi kết nối đến server.");
+      //alert("Lỗi kết nối đến server.");
+      alert("Lỗi đăng nhập: " + (err?.message || JSON.stringify(err)));
     });
 }
 

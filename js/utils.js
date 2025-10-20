@@ -14,13 +14,13 @@ function getUrl() {
 }
 
 function getWebSocketUrl() {
-    return "https://zon88.onrender.com/websocket";
+  return "wss://zon88.onrender.com/websocket";
 }
 
 // Load thông tin account từ API hoặc cache
 async function loadAccountInfo() {
   var forceRefresh = JSON.parse(localStorage.getItem("forceRefresh") || 'false');
-  
+
   const token = localStorage.getItem("accessToken");
   const deviceId = localStorage.getItem("deviceId");
   const cacheKey = "packageStatusData";
@@ -202,8 +202,8 @@ function getDailyCache(keyPrefix) {
   }
 }
 function showAlert(message, type = 'info', timeout = 3000) {
-    const alertId = `alert-${Date.now()}`;
-    const alertHTML = `
+  const alertId = `alert-${Date.now()}`;
+  const alertHTML = `
         <div id="${alertId}" class="alert alert-${type} alert-dismissible fade show mx-auto" role="alert" style="max-width: 600px;">
             ${message}
             <button type="button" class="close" data-dismiss="alert" aria-label="Close" style="outline: none;">
@@ -212,16 +212,16 @@ function showAlert(message, type = 'info', timeout = 3000) {
         </div>
     `;
 
-    const container = document.getElementById('global-alert-container');
-    if (container) {
-        container.insertAdjacentHTML('beforeend', alertHTML);
+  const container = document.getElementById('global-alert-container');
+  if (container) {
+    container.insertAdjacentHTML('beforeend', alertHTML);
 
-        // Tự động xóa sau timeout (mặc định 3s)
-        setTimeout(() => {
-            const el = document.getElementById(alertId);
-            if (el) {
-                $(el).alert('close');
-            }
-        }, timeout);
-    }
+    // Tự động xóa sau timeout (mặc định 3s)
+    setTimeout(() => {
+      const el = document.getElementById(alertId);
+      if (el) {
+        $(el).alert('close');
+      }
+    }, timeout);
+  }
 }
