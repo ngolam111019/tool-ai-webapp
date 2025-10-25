@@ -130,3 +130,33 @@ body {
     transform: rotate(360deg);
   }
 }
+
+#ios-install-guide .guide-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+#ios-install-guide .guide-box {
+  background: #fff;
+  padding: 20px;
+  max-width: 320px;
+  border-radius: 16px;
+  text-align: center;
+  box-shadow: 0 0 10px rgba(0,0,0,0.3);
+}
+#ios-install-guide .guide-box img.icon-share {
+  width: 20px;
+  vertical-align: middle;
+}
+#ios-install-guide .guide-box button {
+  margin-top: 12px;
+  padding: 8px 16px;
+  border: none;
+  background: #007aff;
+  color: #fff;
+  border-radius: 8px;
+}

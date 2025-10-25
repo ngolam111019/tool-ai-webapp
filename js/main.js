@@ -1,3 +1,89 @@
+// ==========================
+// 🔹 Xác định trang hiện tại
+// ==========================
+//const currentPage = window.location.pathname.split("/").pop();
+//console.log("urlParams: " + urlParams);
+// 🔹 Khai báo urlParams an toàn (chống trùng biến khi load lại qua AJAX)
+var pageMain = new URLSearchParams(window.location.search).get("page");
+
+var webSocket1;
+
+// ==========================
+// 🔹 Nếu là trang tooluse.html → chỉ xử lý logic lấy kết quả
+// ==========================
+if (pageMain === "tooluse") {
+  //debugger
+  const gateway = urlParams.get("gateway");
+  const gatewayName = urlParams.get("name") || gateway;
+
+  // Khởi tạo DOM
+  var resultEl = document.getElementById("txtKetQua");
+  var messageEl = document.getElementById("message");
+  var luotEl = document.getElementById("txtLuot");
+  var btnFetch = document.getElementById("btnFetch");
+  var _pkg;
+  btnFetch.textContent = "Bắt đầu chơi";
+
+  // Gán tên cổng game
+  const gatewayNameEl = document.getElementById("gateway-name");
+  if (gatewayNameEl) gatewayNameEl.textContent = gatewayName;
+
+  // Nút quay lại
+  const backBtn = document.getElementById("btnBack");
+  if (backBtn) {
+    backBtn.addEventListener("click", () => {
+      const newUrl = `dashboard.html?page=tool`;
+      window.location.href = newUrl;
+    });
+  }
+
+  // Tải thông tin gói
+  loadAccountInfo().then(data => {
+    if (data) {
+      _pkg = data;
+      const pkg = data.package;
+      const turnsLeft = pkg.max_turns_per_day - pkg.turns_used_today;
+      if (luotEl) luotEl.textContent = `🎮 Còn ${turnsLeft} lượt/ngày`;
+    }
+  });
+
+  // Khi bấm nút "Lấy kết quả"
+  if (btnFetch) {
+    btnFetch.addEventListener("click", async () => {
+      if (gateway === "Zon88") {
+        // Đổi text tạm thời trong khi đang chờ kết nối
+        btnFetch.disabled = true;
+        btnFetch.textContent = "Đang kết nối...";
+        connectWebSocket(gateway, _pkg);
+      } else {
+        // 🟢 Các cổng game khác xử lý như hiện tại
+        await fetchPredictionDirect(gateway);
+      }
+    });
+  }
+}
+
+// ==========================
+// 🔹 Nếu là trang tool.html → chỉ load danh sách cổng game
+// ==========================
+if (pageMain === "tool") {
+  loadAccountInfo().then(data => {
+    if (data) {
+      renderAccountInfo(data);
+      //renderFloatingViewInfo(data);
+    } else {
+      const el = document.getElementById("account-info");
+      if (el) el.innerHTML = "<p class='text-danger'>Không thể tải thông tin tài khoản.</p>";
+    }
+  });
+
+  loadGateways();
+}
+
+// ==========================
+// 🔹 Các hàm dùng chung
+// ==========================
+
 async function loadGateways(forceRefresh = false) {
   var cacheKey = "gateways";
   var cached = getDailyCache(cacheKey);
@@ -6,7 +92,6 @@ async function loadGateways(forceRefresh = false) {
     renderGateways(cached);
     return;
   }
-
 
   try {
     showLoading();
@@ -19,12 +104,10 @@ async function loadGateways(forceRefresh = false) {
     var data = await res.json();
     renderGateways(data);
     setDailyCache(cacheKey, data);
-
   } catch (err) {
     console.error("Lỗi khi load gateway:", err);
     $("#gateway-list").html("<div class='text-danger'>Lỗi tải danh sách cổng game</div>");
-  }
-  finally {
+  } finally {
     hideLoading();
   }
 }
@@ -44,227 +127,178 @@ function renderGateways(gateways) {
 
 function isExpiredFunc(expired_at) {
   try {
-    // expired_at là chuỗi ISO kiểu: "2025-07-18T06:55:00.000Z"
-    const expiredDate = new Date(expired_at); // tự động parse theo UTC
-    const now = new Date(); // Thời gian hiện tại theo local
-
-    return now > expiredDate; // true nếu đã hết hạn
+    const expiredDate = new Date(expired_at);
+    const now = new Date();
+    return now > expiredDate;
   } catch (err) {
     console.error("Lỗi khi kiểm tra expired:", err);
     return false;
   }
 }
 
-var resultEl = document.getElementById("txtKetQua");
-var messageEl = document.getElementById("message");
-var luotEl = document.getElementById("txtLuot");
-var btnFetch = document.getElementById("btnFetch");
-var _pkg;
-
-function renderAccountInfo(data) {
-
-  const { package, trial_used } = data;
-  const expired = package.expired_at ? formatDateTimeVN(package.expired_at) : "Không có";
-
-  document.getElementById("package-name").innerText = "📦 " + package.name;
-  document.getElementById("package-expired").innerText = "⏳ Hết hạn: " + expired;
-  document.getElementById("package-turns").innerText = `🎮 Lượt hôm nay: ${package.turns_used_today || 0}/${package.max_turns_per_day || 0}`;
-
-}
-
 function renderFloatingViewInfo(data) {
   const { package } = data;
-
   var isExpired = false;
   var turnsLeft = 0;
   if (package) {
     _pkg = data;
     isExpired = isExpiredFunc(package.expired_at);
     turnsLeft = (package.max_turns_per_day - package.turns_used_today);
-    luotEl.textContent = "🎮 Còn " + turnsLeft + " lượt/ngày";
+    if (luotEl) luotEl.textContent = "🎮 Còn " + turnsLeft + " lượt/ngày";
   }
-
-  if (isExpired) {
+  if (isExpired && resultEl) {
     resultEl.textContent = "🎲 Hết hạn sử dụng";
   }
 }
 
-loadAccountInfo().then(data => {
-  if (data) {
-    renderAccountInfo(data);
-    renderFloatingViewInfo(data);
-  }
-  else
-    document.getElementById("account-info").innerHTML = "<p class='text-danger'>Không thể tải thông tin tài khoản.</p>";
-});
+// ==========================
+// 🔹 Các hàm dùng trong tooluse.html
+// ==========================
 
-loadGateways();
+async function fetchPredictionDirect(gateway) {
+  const startTime = Date.now();
+  let dotCount = 1;
 
-async function fetchPrediction() {
-  const gateway = $("#floating-view").attr("data-gateway");
-  console.log(gateway);
-  if (gateway == "Zon88") {
-    btnFetch.disabled = true;
-    btnFetch.textContent = "Kết quả tự động";
-    connectWebSocket(gateway, _pkg);
-  }
-  else {
-    resetFormFloatingView();
-    var startTime = Date.now();
-    let dotCount = 1;
-    const interval = setInterval(() => {
-      resultEl.textContent = "🎲".repeat(dotCount);
-      dotCount = dotCount < 3 ? dotCount + 1 : 1;
-    }, 1000);
+  // 🎲 Hiệu ứng loading chấm động
+  const interval = setInterval(() => {
+    resultEl.textContent = "🎲".repeat(dotCount);
+    dotCount = dotCount < 3 ? dotCount + 1 : 1;
+  }, 1000);
 
-    var resultText = "", messageText = "", luotText = 0;
-    try {
-      const token = localStorage.getItem("accessToken");
-      const deviceId = localStorage.getItem("deviceId");
+  // ⚙️ Trạng thái ban đầu
+  btnFetch.disabled = true;
+  btnFetch.textContent = "Đang lấy kết quả...";
+  btnFetch.style.backgroundColor = "#ffc107"; // màu cam (đang xử lý)
+  btnFetch.style.color = "#212529";
 
-      const res = await fetch(getUrl() + "/api/tool/use", {
-        method: "POST", // ✅ thêm phương thức POST
-        headers: {
-          "Content-Type": "application/json", // ✅ quan trọng để server hiểu JSON
-          Authorization: "Bearer " + token,
-          "x-device-id": deviceId
-        },
-        body: JSON.stringify({
-          gateway: gateway
-        })
-      });
-      const data = await res.json();
+  let resultText = "", messageText = "", luotText = 0;
+  let success = false;
 
-      if (res.ok && data && data.result) {
-        resultText = data.result;
-        luotText = data.turns_left;
+  try {
+    const token = localStorage.getItem("accessToken");
+    const res = await fetch(getUrl() + "/api/tool/use", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token,
+        "x-device-id": getDeviceId()
+      },
+      body: JSON.stringify({ gateway })
+    });
 
-      } else {
-        resultText = "Không có kết quả.";
-        messageText = data.message;
-      }
-    } catch (err) {
-      resultText = "Lỗi kết nối.";
-      messageText = err;
+    const data = await res.json();
+
+    if (res.ok && data?.result) {
+      resultText = data.result;
+      luotText = data.turns_left;
+      success = true;
+    } else {
+      resultText = "Không có kết quả.";
+      messageText = data?.message || "";
     }
 
-    // Tính thời gian đã trôi qua
-    const elapsed = Date.now() - startTime;
-    const remaining = 6000 - elapsed;
-
-    if (remaining > 0) {
-      await new Promise(resolve => setTimeout(resolve, remaining));
-    }
-
-    clearInterval(interval);
-    luotEl.textContent = "🎮 Còn " + luotText + " lượt/ngày";
-    resultEl.textContent = "🎲 " + resultText;
-    messageEl.textContent = messageText;
+  } catch (err) {
+    resultText = "Lỗi kết nối.";
+    messageText = err.message || "Không thể kết nối tới máy chủ.";
   }
+
+  // 🕒 Đảm bảo loading ít nhất 6 giây
+  const elapsed = Date.now() - startTime;
+  const remaining = 6000 - elapsed;
+  if (remaining > 0) await new Promise(r => setTimeout(r, remaining));
+
+  clearInterval(interval);
+
+  // ✅ Hiển thị kết quả
+  resultEl.textContent = "🎲 " + resultText;
+  messageEl.textContent = messageText || "";
+  luotEl.textContent = luotText ? ("🎮 Còn " + luotText + " lượt/ngày") : "";
+
+  // 🌿 Nếu có kết quả → hiển thị "Đã có kết quả" + màu xanh lá
+  if (success) {
+    btnFetch.textContent = "Đã có kết quả 👆";
+    btnFetch.style.backgroundColor = "#28a745"; // xanh lá
+    btnFetch.style.color = "#fff";
+    await new Promise(r => setTimeout(r, 5000));
+  }
+
+  // 🔁 Khôi phục nút về trạng thái ban đầu
+  btnFetch.disabled = false;
+  btnFetch.textContent = "Lấy kết quả";
+  btnFetch.style.backgroundColor = "#007bff"; // xanh dương gốc
+  btnFetch.style.color = "#fff";
+
+  localStorage.setItem("forceRefresh", "true");
 }
 
-$('#game-loading').hide();
+// ==========================
+// 🔹 WebSocket & xử lý kết quả
+// ==========================
 
-async function showFloatingView(gatewayId, gatewayName) {
-  // 1. Hiện loading
-  $('#game-loading').show();
-  $('#floating-view').hide();
-  // 2. Ghi tên gateway
-  $('#gateway-name').text(gatewayName || "Cổng game");
-
-  // 3. Giả lập kết nối 3 giây
-  await new Promise(resolve => setTimeout(resolve, 3000));
-
-
-  // 4. Ẩn loading, hiện floating view
-  $('#game-loading').hide();
-  $("#floating-title").text(gatewayName);
-  $("#prediction-result").text("Kết quả: ?");
-  $("#floating-view").fadeIn();
-  $("#floating-view").attr("data-gateway", gatewayId);
+function showFloatingView(gatewayId, gatewayName) {
+  const newUrl = `dashboard.html?page=tooluse&gateway=${encodeURIComponent(gatewayId)}&name=${encodeURIComponent(gatewayName)}`;
+  window.location.href = newUrl;
+  //loadPage('tooluse', {gateway: gatewayId, name: gatewayName});
 }
-
-// Nút đóng
-$("#close-floating").on("click", () => {
-  resetFormFloatingView();
-  localStorage.setItem("forceRefresh", true);
-  $("#floating-view").fadeOut();
-  if (webSocket1) webSocket1.close();
-});
-
-// Kéo thả
-function makeDraggable(el) {
-  let isDragging = false;
-  let offsetX = 0, offsetY = 0;
-
-  const start = (e) => {
-    isDragging = true;
-    const evt = e.touches ? e.touches[0] : e;
-    offsetX = evt.clientX - el.offsetLeft;
-    offsetY = evt.clientY - el.offsetTop;
-
-    document.addEventListener("mousemove", move);
-    document.addEventListener("touchmove", move, { passive: false });
-    document.addEventListener("mouseup", stop);
-    document.addEventListener("touchend", stop);
-  };
-
-  const move = (e) => {
-    if (!isDragging) return;
-    const evt = e.touches ? e.touches[0] : e;
-    el.style.left = (evt.clientX - offsetX) + "px";
-    el.style.top = (evt.clientY - offsetY) + "px";
-    el.style.right = "auto";
-    el.style.bottom = "auto";
-    if (e.cancelable) e.preventDefault();
-  };
-
-  const stop = () => {
-    isDragging = false;
-    document.removeEventListener("mousemove", move);
-    document.removeEventListener("touchmove", move);
-    document.removeEventListener("mouseup", stop);
-    document.removeEventListener("touchend", stop);
-  };
-
-  el.addEventListener("mousedown", start);
-  el.addEventListener("touchstart", start);
-}
-
-makeDraggable(document.getElementById("floating-view"));
 
 function resetFormFloatingView() {
-  messageEl.textContent = "";
-  resultEl.textContent = "🎲 Kết quả: ?";
-  btnFetch.textContent = "Lấy kết quả";
-  btnFetch.disabled = false;
-}
-
-var webSocket1;
-
-function initToolPage() {
-  const wsUrl = getWebSocketUrl(); // Hàm trả về URL WebSocket, ví dụ: "wss://tool-ai.example.com/ws"
-  if (webSocket1) webSocket1.close();
-  webSocket1 = new WebSocket(wsUrl);
+  if (messageEl) messageEl.textContent = "";
+  if (resultEl) resultEl.textContent = "🎲 Kết quả: ?";
+  if (btnFetch) {
+    btnFetch.textContent = "Lấy kết quả";
+    btnFetch.disabled = false;
+  }
 }
 
 function connectWebSocket(room, pkg) {
   try {
-    if (btnFetch) btnFetch.textContent = 'Lấy kết quả tự động...';
     var wsUrl = getWebSocketUrl();
     if (webSocket1) webSocket1.close();
-    // Bắt đầu kết nối
     webSocket1 = new WebSocket(wsUrl);
+
     // Khi kết nối thành công
     webSocket1.onopen = function () {
       console.log("✅ WebSocket connected");
 
-      const joinObj = {
-        event: "join_room",
-        room: room,
-        uid: pkg.email
-      };
+      const joinObj = { event: "join_room", room: room, uid: pkg.email };
       webSocket1.send(JSON.stringify(joinObj));
+
+      // ⚠️ Thêm cảnh báo khi reload nếu đang kết nối
+      window.onbeforeunload = function (e) {
+        if (webSocket1 && webSocket1.readyState === WebSocket.OPEN) {
+          const message = "Bạn đang kết nối với Zon88. Reload sẽ ngắt kết nối, bạn có chắc muốn tải lại trang?";
+          e.preventDefault();
+          e.returnValue = message; // cần cho Chrome
+          return message;
+        }
+      };
+
+      // Hiển thị nút ngắt kết nối sau khi kết nối thành công
+      if (!document.getElementById("btnDisconnect")) {
+        const disconnectBtn = document.createElement("button");
+        disconnectBtn.id = "btnDisconnect";
+        disconnectBtn.className = "btn btn-danger ml-2";
+        disconnectBtn.textContent = "Ngắt kết nối";
+
+        btnFetch.insertAdjacentElement("afterend", disconnectBtn);
+        btnFetch.textContent = "Đang nhận tín hiệu...";
+        btnFetch.disabled = true;
+        messageEl.textContent = "Đã kết nối tới Zon88, đang chờ tín hiệu...";
+
+        disconnectBtn.addEventListener("click", () => {
+          if (webSocket1) {
+            webSocket1.close();
+            console.log("🔌 Đã ngắt kết nối WebSocket");
+          }
+          disconnectBtn.remove();
+          btnFetch.disabled = false;
+          btnFetch.textContent = "Lấy kết quả";
+          messageEl.textContent = "Đã ngắt kết nối khỏi Zon88.";
+
+          // 🔹 Gỡ cảnh báo reload khi đã ngắt kết nối
+          window.onbeforeunload = null;
+        });
+      }
     };
 
     // Khi nhận được tin nhắn
@@ -272,7 +306,7 @@ function connectWebSocket(room, pkg) {
       try {
         const msg = JSON.parse(event.data);
         if (msg.event === "game_result" && msg.data) {
-          handleGameResult(msg.data, room); // Bạn cần định nghĩa hàm này ở nơi khác
+          handleGameResult(msg.data, room);
         }
       } catch (e) {
         console.error("Lỗi xử lý message:", e);
@@ -282,95 +316,87 @@ function connectWebSocket(room, pkg) {
     // Khi xảy ra lỗi
     webSocket1.onerror = function (err) {
       console.error("❌ WebSocket error:", err);
-      if (btnFetch) btnFetch.textContent = 'Lấy kết quả';
+      messageEl.textContent = "Không thể kết nối WebSocket.";
+      btnFetch.disabled = false;
+      btnFetch.textContent = "Lấy kết quả";
     };
 
     // Khi bị đóng
     webSocket1.onclose = function (event) {
       console.log("❌ WebSocket closed:", event.reason);
-      console.log("Reconnecting in 3s...");
-      setTimeout(() => connectWebSocket(room, pkg), 3000);
+      window.onbeforeunload = null; // ✅ không cảnh báo khi reload nữa
+      const disconnectBtn = document.getElementById("btnDisconnect");
+      if (disconnectBtn) disconnectBtn.remove();
+      btnFetch.disabled = false;
+      btnFetch.textContent = "Lấy kết quả";
+      messageEl.textContent = "Kết nối đã đóng.";
     };
-
   } catch (e) {
     console.error(e);
-    if (btnFetch) btnFetch.textContent = 'Lấy kết quả';
+    btnFetch.disabled = false;
+    btnFetch.textContent = "Lấy kết quả";
   }
 }
 
 async function handleGameResult(data, gatewayName) {
-  isLoading = true;
+  if (!resultEl || !btnFetch) return;
   let dotCount = 0;
-
-  // UI: reset trạng thái ban đầu
   resultEl.textContent = "Kết quả...";
   btnFetch.textContent = "Chờ kết quả...";
 
-  // Bắt đầu cập nhật dấu chấm mỗi giây
   let dotUpdater = setInterval(() => {
     dotCount = (dotCount % 3) + 1;
     resultEl.textContent = "Kết quả" + ".".repeat(dotCount);
   }, 1000);
 
   const startTime = Date.now();
-
   try {
     const token = localStorage.getItem("accessToken");
-    const deviceId = localStorage.getItem("deviceId");
-
-    const body = {
-      gateway: gatewayName,
-      result: data.rs || 0,
-      round_code: data.phien || 0
-    };
 
     const res = await fetch(getUrl() + "/api/tool/use", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: "Bearer " + token,
-        "x-device-id": deviceId
+        "x-device-id": getDeviceId()
       },
-      body: JSON.stringify(body)
+      body: JSON.stringify({
+        gateway: gatewayName,
+        result: data.rs || 0,
+        round_code: data.phien || 0
+      })
     });
 
+    localStorage.setItem("forceRefresh", true);
     const elapsed = Date.now() - startTime;
-    const delay = Math.max(6000 - elapsed, 0); // đảm bảo đủ 6 giây
-
+    const delay = Math.max(6000 - elapsed, 0);
     setTimeout(async () => {
       clearInterval(dotUpdater);
-      isLoading = false;
+      const resultJson = await res.json();
+      const result = resultJson.result || "?";
+      const turnsLeft = resultJson.turns_left || 0;
+      const message = resultJson.message || "";
 
-      try {
-        const resultJson = await res.json();
-        const result = resultJson.result || "?";
-        const turnsLeft = resultJson.turns_left || 0;
-        const message = resultJson.message || "";
+      btnFetch.textContent = "Đã có kết quả";
+      resultEl.textContent = "🎲 " + result;
+      if (luotEl) luotEl.textContent = "🎮 Còn " + turnsLeft + " lượt/ngày";
 
-        // UI cập nhật
-        localStorage.setItem("forcePackageStatusRefresh", "true");
-        btnFetch.textContent = "Đã có kết quả";
-        resultEl.textContent = "🎲 " + result;
-        luotEl.textContent = "🎮 Còn " + turnsLeft + " lượt/ngày";
+      if (turnsLeft <= 3 && turnsLeft > 0) showAlert(`⚠️ Chỉ còn ${turnsLeft} lượt hôm nay`);
+      if (turnsLeft === 0) showAlert(message);
 
-        if (turnsLeft <= 3 && turnsLeft > 0) {
-          showAlert(`⚠️ Chỉ còn ${turnsLeft} lượt hôm nay`);
-        }
-
-        if (turnsLeft === 0) {
-          showAlert(message);
-
-        }
-      } catch (err) {
-        showAlert(err.message || "Lỗi xử lý kết quả", 'danger');
-        btnFetch.textContent = "Lấy kết quả";
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        new Notification('Tín hiệu mới từ Tool AI ⚡', {
+          body: "🎲 " + result,
+          icon: '/icons/icon-512.png',
+          tag: 'tool-txai',
+          requireInteraction: true
+        });
       }
     }, delay);
-
   } catch (err) {
     clearInterval(dotUpdater);
-    isLoading = false;
-    showAlert(err.message || "Lỗi gửi yêu cầu", 'danger');
-    btnFetch.textContent = "Lấy kết quả";
+    showAlert(err.message || "Lỗi xử lý kết quả", 'danger');
+    if (btnFetch) btnFetch.textContent = "Lấy kết quả";
   }
 }

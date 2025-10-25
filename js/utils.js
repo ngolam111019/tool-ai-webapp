@@ -8,11 +8,6 @@ function redirectIfNotLogin() {
   }
 }
 
-function getUrl() {
-  //return "http://127.0.0.1:3000";
-  return "https://tool-ai-api-4fdc58954ac0.herokuapp.com";
-}
-
 function getWebSocketUrl() {
   return "wss://zon88.onrender.com/websocket";
 }
@@ -22,7 +17,6 @@ async function loadAccountInfo() {
   var forceRefresh = JSON.parse(localStorage.getItem("forceRefresh") || 'false');
 
   const token = localStorage.getItem("accessToken");
-  const deviceId = localStorage.getItem("deviceId");
   const cacheKey = "packageStatusData";
   const cacheTimeKey = "packageStatusFetchedAt";
   const now = Date.now();
@@ -44,7 +38,7 @@ async function loadAccountInfo() {
     const res = await fetch(getUrl() + "/api/package/status", {
       headers: {
         Authorization: "Bearer " + token,
-        "x-device-id": deviceId
+        "x-device-id": getDeviceId()
       }
     });
 
@@ -63,6 +57,7 @@ async function loadAccountInfo() {
     return null;
   }
 }
+
 async function loadPackages(forceRefresh = false) {
   const token = localStorage.getItem("accessToken");
   const cacheKey = "cachedPackages";
@@ -104,7 +99,6 @@ async function loadPackages(forceRefresh = false) {
 
 async function fetchPaymentInfo(packageId, amount) {
   const token = localStorage.getItem("accessToken");
-  const deviceId = localStorage.getItem("deviceId");
 
   try {
     const response = await fetch(getUrl() + "/api/payment/create", {
@@ -112,7 +106,7 @@ async function fetchPaymentInfo(packageId, amount) {
       headers: {
         "Content-Type": "application/json",
         Authorization: "Bearer " + token,
-        "x-device-id": deviceId
+        "x-device-id": getDeviceId()
       },
       body: JSON.stringify({
         package_id: packageId,
@@ -139,11 +133,13 @@ function formatThousandsVNXu(number) {
   if (isNaN(number)) return "0 xu";
   return number.toLocaleString("vi-VN") + " xu";
 }
+
 function formatThousandsVN(number) {
   if (typeof number !== "number") number = parseFloat(number);
   if (isNaN(number)) return "0";
   return number.toLocaleString("vi-VN");
 }
+
 function formatDateTimeVN(dateStr) {
   const date = new Date(dateStr);
 
@@ -201,6 +197,7 @@ function getDailyCache(keyPrefix) {
     return null;
   }
 }
+
 function showAlert(message, type = 'info', timeout = 3000) {
   const alertId = `alert-${Date.now()}`;
   const alertHTML = `
@@ -225,3 +222,35 @@ function showAlert(message, type = 'info', timeout = 3000) {
     }, timeout);
   }
 }
+
+function renderAccountInfo(data) {
+  const { package, trial_used, email, xu } = data;
+  const expired = package.expired_at ? formatDateTimeVN(package.expired_at) : "Không có";
+
+  if (document.getElementById("user-email"))
+    document.getElementById("user-email").innerText = email;
+  
+  document.getElementById("package-name").innerText = "📦 " + package.name;
+  document.getElementById("package-expired").innerText = "⏳ Hết hạn: " + expired;
+  document.getElementById("package-turns").innerText = `🎮 Lượt hôm nay: ${package.turns_used_today || 0}/${package.max_turns_per_day || 0}`;
+  
+  if(document.getElementById("package-gateways"))
+    document.getElementById("package-gateways").innerText = `🎲 Cổng game: ${package.gateways.join(', ')}`;
+
+  if (document.getElementById("xu"))
+    document.getElementById("xu").innerText = xu;
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+  const btnUpgrade = document.getElementById("btnUpgrade");
+  if (btnUpgrade) {
+    btnUpgrade.addEventListener("click", function(e) {
+      e.preventDefault(); // tránh reload khi là <a>
+      gtag('event', 'click_upgrade_button', {
+        location: 'navbar',
+        user_email: localStorage.getItem("userEmail")
+      });
+      window.location.href = "/dashboard.html?page=packages";
+    });
+  }
+});

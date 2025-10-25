@@ -57,11 +57,10 @@ async function loadTransactionHistory() {
   try {
     showLoading();
     const token = localStorage.getItem("accessToken");
-    const deviceId = localStorage.getItem("deviceId");
     const res = await fetch(getUrl() + "/api/balance/logs", {
       headers: {
         Authorization: "Bearer " + token,
-        "x-device-id": deviceId
+        "x-device-id": getDeviceId()
       }
     });
     transactionCache = await res.json(); // ✅ lưu cache

@@ -1,43 +1,99 @@
 function handleLogin(response) {
   const idToken = response.credential;
-  const deviceId = getOrCreateDeviceId();
-  //var url = 'http://127.0.0.1:3000';
-  var url = 'https://tool-ai-api-4fdc58954ac0.herokuapp.com';
-  fetch(url + "/api/auth/google", {
+  const deviceId = getDeviceId();
+
+  fetch(getUrl() + "/api/auth/google", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ idToken, deviceId, platform: 1 })
   })
     .then(res => res.json())
     .then(data => {
-      if (data.token) {
-        console.log(deviceId);
 
-        // Lưu session
-        localStorage.setItem("accessToken", data.token);
-        localStorage.setItem("userEmail", data.email);
-        localStorage.setItem("deviceId", deviceId);
-        if (Notification.permission === "granted") {
-          // Đã cấp quyền → vào dashboard
-          window.location.href = "dashboard.html";
-        } else {
-          // Chưa cấp → vào trang xin quyền
-          window.location.href = "notification-permission.html";
-        }
+      gtag('event', 'login', {
+        method: 'google'
+      });
+      
+      handleAuthResponse(data, deviceId);
+    })
+    .catch(err => {
+      console.error("Lỗi đăng nhập Google:", err);
+      alert("Lỗi đăng nhập Google: " + (err?.message || JSON.stringify(err)));
+    });
+}
 
+// =====================================
+// Đăng nhập bằng Email & Password
+// =====================================
+function handleEmailLogin(e) {
+  e.preventDefault();
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
+  const deviceId = getDeviceId();
+  const btn = document.getElementById("btnLogin");
+  const statusEl = document.getElementById("loginStatus");
+
+  if (!email || !password) {
+    alert("Vui lòng nhập đầy đủ email và mật khẩu.");
+    return false;
+  }
+
+  btn.disabled = true;
+  btn.textContent = "Đang đăng nhập...";
+  statusEl.textContent = "Đang xử lý, vui lòng chờ...";
+
+  fetch(getUrl() + "/api/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password, device_id: deviceId })
+  })
+    .then(res => res.json())
+    .then(data => {
+      if (data?.token) {
+
+        gtag('event', 'login', {
+          method: 'email'
+        });
+
+        handleAuthResponse(data, deviceId);
       } else {
-        alert("Đăng nhập thất bại: " + (data.message || "Không rõ nguyên nhân"));
+        throw new Error(data?.message || "Sai email hoặc mật khẩu.");
       }
     })
     .catch(err => {
       console.error("Lỗi đăng nhập:", err);
-      //alert("Lỗi kết nối đến server.");
-      alert("Lỗi đăng nhập: " + (err?.message || JSON.stringify(err)));
+      alert("Đăng nhập thất bại: " + (err?.message || "Không rõ nguyên nhân"));
+    })
+    .finally(() => {
+      btn.disabled = false;
+      btn.textContent = "Đăng nhập";
+      statusEl.textContent = "";
     });
+
+  return false;
 }
 
+// =====================================
+// Xử lý phản hồi sau khi đăng nhập thành công
+// =====================================
+function handleAuthResponse(data, deviceId) {
+  if (data?.token) {
+    localStorage.setItem("accessToken", data.token);
+    localStorage.setItem("userEmail", data.email);
+
+    if (Notification.permission === "granted") {
+      window.location.href = "dashboard.html";
+    } else {
+      window.location.href = "notification-permission.html";
+    }
+  } else {
+    alert("Đăng nhập thất bại: " + (data?.message || "Không rõ nguyên nhân"));
+  }
+}
+
+// =====================================
+// Tiện ích
+// =====================================
 function parseJwt(token) {
   try {
     const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
@@ -47,14 +103,4 @@ function parseJwt(token) {
   } catch (e) {
     return null;
   }
-}
-
-// Sinh deviceId nếu chưa có
-function getOrCreateDeviceId() {
-  let id = localStorage.getItem("deviceId");
-  if (!id) {
-    id = 'device-' + Math.random().toString(36).substring(2, 10);
-    localStorage.setItem("deviceId", id);
-  }
-  return id;
 }

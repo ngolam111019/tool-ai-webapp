@@ -91,6 +91,7 @@
     }
 
     async function confirmPayment() {
+        localStorage.setItem("forceRefresh", true);
         isPaymentConfirmed = true;
         if (socket) {
             socket.disconnect();
@@ -135,9 +136,25 @@
         socket.on("payment_result", (data) => {
             if (data.is_success === true) {
                 isPaymentConfirmed = true;
+                localStorage.setItem("forceRefresh", true);
                 if (socket) socket.disconnect();
                 clearTimeout(socketTimeout);
                 clearInterval(countdownInterval);
+
+                gtag('event', 'purchase', {
+                    transaction_id: txid || Date.now().toString(),
+                    value: data.amount, // tổng tiền (VNĐ)
+                    currency: 'VND',
+                    items: [{
+                        item_id: 'xu_' + data.amount,
+                        item_name: 'Nạp QR',
+                        item_category: 'Top-up',
+                        price: data.amount,
+                        quantity: 1
+                    }],
+                    user_email: localStorage.getItem("userEmail")
+                });
+
                 showAlert("💰 Giao dịch thành công! Chuyển sang lịch sử để xem trạng thái.");
                 loadPage("history");
             } else {

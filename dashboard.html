@@ -15,13 +15,23 @@
   <link rel="apple-touch-icon" href="assets/icon-192.png">
   <script>
     function isIOSDevice() {
-      return /iPhone|iPad|iPod/i.test(navigator.userAgent);
+      //return /iPhone|iPad|iPod/i.test(navigator.userAgent);
+      return true;
     }
 
     // Nếu không phải thiết bị iOS → chuyển hướng
     if (!isIOSDevice()) {
       window.location.href = "unsupported.html";
     }
+  </script>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-FERX73KD2F"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+
+    gtag('config', 'G-FERX73KD2F');
   </script>
 </head>
 
@@ -48,6 +58,7 @@
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script src="js/utils-url.js"></script>
   <script src="js/utils.js"></script>
   <script src="js/ui.js"></script>
   <script>
@@ -56,10 +67,16 @@
     loadFooter();
 
     // Lấy trang từ URL nếu có (vd: dashboard.html?page=payment&goi=trial_pro)
-    const urlParams = new URLSearchParams(window.location.search);
-    const page = urlParams.get("page") || "account";
+    var urlParams = new URLSearchParams(window.location.search);
+    var page = urlParams.get("page") || "tool";
 
-    loadPage(page);
+    const allParams = Object.fromEntries(urlParams.entries());
+    const excludeKeys = ['page']; // danh sách cần loại
+    const filtered = Object.fromEntries(
+      Object.entries(allParams).filter(([key]) => !excludeKeys.includes(key))
+    );
+
+    loadPage(page, filtered);
   </script>
   <script>
     if ('serviceWorker' in navigator) {
@@ -67,13 +84,43 @@
     }
   </script>
   <script>
-    const isIos = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
-    const isInStandaloneMode = ('standalone' in window.navigator) && window.navigator.standalone;
-
-    if (isIos && !isInStandaloneMode && !localStorage.getItem('pwaPrompted')) {
-      alert("📲 Bạn có thể thêm Tool AI vào Màn hình chính để sử dụng như app.\nTrên Safari, chọn biểu tượng Share > Add to Home Screen.");
-      localStorage.setItem('pwaPrompted', '1');
+    function isIos() {
+      //return /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+      return true;
     }
+
+    function isInStandaloneMode() {
+      return ('standalone' in window.navigator) && window.navigator.standalone;
+    }
+
+    function showAddToHomeScreenPrompt() {
+      const guide = document.createElement('div');
+      guide.id = 'ios-install-guide';
+      guide.innerHTML = `
+    <div class="guide-overlay">
+      <div class="guide-box">
+        <h3>Thêm Tool AI ra Màn hình chính 📱</h3>
+        <p>Để sử dụng đầy đủ tính năng (thông báo, tự động, v.v), bạn cần thêm ứng dụng ra màn hình chính.</p>
+        <p>Nhấn biểu tượng <img src="/assets/share-icon.png" alt="Share icon" class="icon-share"> sau đó chọn <strong>Thêm vào Màn hình chính</strong>.</p>
+        <button id="closeGuide">Đã hiểu</button>
+      </div>
+    </div>
+  `;
+      document.body.appendChild(guide);
+
+      document.getElementById('closeGuide').onclick = () => {
+        guide.remove();
+        localStorage.setItem('hideIosGuide', '1');
+      };
+    }
+
+    // Chạy khi load trang
+    window.addEventListener('load', () => {
+      if (isIos() && !isInStandaloneMode() && !localStorage.getItem('hideIosGuide')) {
+        showAddToHomeScreenPrompt();
+      }
+    });
+
   </script>
 </body>
 

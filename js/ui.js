@@ -20,8 +20,7 @@ function loadPage(pageName, params = {}) {
   // Tải file HTML vào #content
   $('#content').load(fullPath, function (response, status) {
     if (status === "success") {
-      setPageTitleByFile(pageName + ".html");
-      if (pageName === 'tool') initToolPage();
+      setPageTitleByFile(pageName + ".html", params);
     } else {
       $("#content").html("<p class='text-danger'>Không thể tải trang.</p>");
     }
@@ -47,8 +46,9 @@ function setPageTitle(title) {
   $("#page-title").text(title);
 }
 
-function setPageTitleByFile(path) {
+function setPageTitleByFile(path, params) {
   const map = {
+    "tooluse.html": "🤖 Tool" + (params && params.name ? " " + params.name : ".ai"),
     "tool.html": "🤖 tool.ai",
     "packages.html": "👑 Nâng cấp",
     "account.html": "🔐 Tài khoản",
@@ -56,6 +56,7 @@ function setPageTitleByFile(path) {
     "history.html": "📜 Lịch sử giao dịch"
   };
   const filename = path.split('/').pop();
+  document.title = map[filename] || "🤖 tool.ai";
   setPageTitle(map[filename] || "🤖 tool.ai");
 }
 async function registerServiceWorker() {

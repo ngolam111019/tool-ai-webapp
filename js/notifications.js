@@ -20,14 +20,13 @@ async function registerPush() {
 
   // Gửi subscription lên server
   const token = localStorage.getItem('accessToken');
-  const deviceId = localStorage.getItem('deviceId');
 
   const res = await fetch(getUrl() + '/api/auth/save-web-subscription', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: 'Bearer ' + token,
-      'x-device-id': deviceId
+      'x-device-id': getDeviceId()
     },
     body: JSON.stringify({
       subscription

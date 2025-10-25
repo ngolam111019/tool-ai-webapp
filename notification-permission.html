@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -12,28 +13,43 @@
       background: #f8f9fa;
       color: #333;
     }
+
     .card {
       border: none;
       border-radius: 12px;
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
     }
+
     .btn {
       font-size: 1.1rem;
       padding: 12px 20px;
       border-radius: 8px;
     }
+
     .alert {
       font-size: 0.95rem;
     }
+
     ul {
       padding-left: 1.2rem;
       text-align: left;
     }
+
     .hidden {
       display: none;
     }
   </style>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-FERX73KD2F"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+
+    gtag('config', 'G-FERX73KD2F');
+  </script>
 </head>
+
 <body>
 
   <div class="container">
@@ -54,11 +70,24 @@
         <li><strong>Safari:</strong> Preferences → Websites → Notifications</li>
       </ul>
     </div>
+
+    <div id="error-message" class="alert alert-warning mt-4 hidden text-center"></div>
   </div>
 
+  <script src="js/utils-url.js"></script>
   <script src="js/utils.js"></script>
   <script>
-    document.getElementById('btn-allow').addEventListener('click', async () => {
+    const btnAllow = document.getElementById('btn-allow');
+    const deniedMsg = document.getElementById('denied-message');
+    const errorMsg = document.getElementById('error-message');
+
+    btnAllow.addEventListener('click', async () => {
+      btnAllow.disabled = true;
+      btnAllow.innerHTML = '⏳ Đang xử lý...';
+
+      deniedMsg.classList.add('hidden');
+      errorMsg.classList.add('hidden');
+
       try {
         const permission = await Notification.requestPermission();
 
@@ -67,15 +96,25 @@
           await registerPush();
           window.location.href = 'dashboard.html?page=tool';
         } else if (permission === 'denied') {
-          document.getElementById('denied-message').classList.remove('hidden');
+          deniedMsg.classList.remove('hidden');
+          btnAllow.disabled = false;
+          btnAllow.innerHTML = '🎯 Cho phép thông báo';
+        } else {
+          throw new Error('Trình duyệt không phản hồi yêu cầu quyền thông báo.');
         }
       } catch (err) {
         console.error('Lỗi xin quyền:', err);
+        errorMsg.textContent = '⚠️ Có lỗi xảy ra khi đăng ký thông báo. Vui lòng thử lại.';
+        errorMsg.classList.remove('hidden');
+        btnAllow.disabled = false;
+        btnAllow.innerHTML = '🎯 Thử lại';
       }
     });
 
     async function registerPush() {
-      if (!('serviceWorker' in navigator)) return;
+      if (!('serviceWorker' in navigator)) {
+        throw new Error('Trình duyệt của bạn không hỗ trợ Service Worker.');
+      }
 
       const reg = await navigator.serviceWorker.register('/service-worker.js');
       const sub = await reg.pushManager.subscribe({
@@ -83,21 +122,30 @@
         applicationServerKey: urlBase64ToUint8Array('BBeZbEwXml_v93n0caqGDxOEdX8WMjFMc018zOtujFo-w6mTLDWDqXqGot4CoyFz0VJUKiYCA6TmDUq9Bk4964U')
       });
 
-      const token = localStorage.getItem('token');
-      const deviceId = localStorage.getItem('deviceId');
+      const token = localStorage.getItem('accessToken');
 
-      await fetch(getUrl() + '/api/auth/save-web-subscription', {
+      if (!token) {
+        throw new Error('Không tìm thấy token trong localStorage.');
+      }
+
+      const headers = {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer ' + token,
+        'x-device-id': getDeviceId()
+      };
+
+      const res = await fetch(getUrl() + '/api/auth/save-web-subscription', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: 'Bearer ' + token,
-          'x-device-id': deviceId
-        },
+        headers,
         body: JSON.stringify({
           platform: 'web',
           subscription: sub
         })
       });
+
+      if (!res.ok) {
+        throw new Error('Không thể lưu thông tin đăng ký lên server.');
+      }
 
       console.log('✅ Đã đăng ký subscription thành công');
     }
@@ -108,10 +156,7 @@
       const rawData = atob(base64);
       return new Uint8Array([...rawData].map(c => c.charCodeAt(0)));
     }
-
-    function getUrl() {
-      return location.origin;
-    }
   </script>
 </body>
+
 </html>
