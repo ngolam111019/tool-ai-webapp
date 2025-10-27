@@ -66,7 +66,8 @@
       <button type="submit" id="btnLogin" class="btn btn-primary btn-block mt-3">Đăng nhập</button>
     </form>
 
-    <div id="loginStatus" class="mt-3 text-muted small"></div>
+  <label id="loginStatus" class="mt-3 text-muted small"></label>
+
     <hr class="my-3">
     <a href="forgot-step1.html" class="d-block mt-3 small">Quên mật khẩu?</a>
     <a href="register-step1.html" class="d-block mt-3 small">Chưa có tài khoản? Đăng ký ngay</a>
@@ -121,6 +122,45 @@
         hideLoading();
       }
     })();
+  </script>
+  <script>
+    function isIos() {
+      //return /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+      return true;
+    }
+
+    function isInStandaloneMode() {
+      return ('standalone' in window.navigator) && window.navigator.standalone;
+    }
+
+    function showAddToHomeScreenPrompt() {
+      const guide = document.createElement('div');
+      guide.id = 'ios-install-guide';
+      guide.innerHTML = `
+    <div class="guide-overlay">
+      <div class="guide-box">
+        <h3>Thêm Tool AI ra Màn hình chính 📱</h3>
+        <p>Để sử dụng đầy đủ tính năng (thông báo, tự động, v.v), bạn cần thêm ứng dụng ra màn hình chính.</p>
+        <p>Nhấn biểu tượng <img src="/assets/share-icon.png" alt="Share icon" class="icon-share"> sau đó chọn <strong>Thêm vào Màn hình chính</strong>.</p>
+        <button id="closeGuide">Đã hiểu</button>
+      </div>
+    </div>
+  `;
+      document.body.appendChild(guide);
+
+      document.getElementById('closeGuide').onclick = () => {
+        guide.remove();
+        localStorage.setItem('hideIosGuide', '1');
+      };
+    }
+
+    // Chạy khi load trang
+    window.addEventListener('load', () => {
+      if (isIos() && !isInStandaloneMode() && !localStorage.getItem('hideIosGuide')) {
+        showAddToHomeScreenPrompt();
+      }
+    });
+
   </script>
 </body>
 

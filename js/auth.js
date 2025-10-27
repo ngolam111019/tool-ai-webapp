@@ -1,6 +1,11 @@
 function handleLogin(response) {
   const idToken = response.credential;
   const deviceId = getDeviceId();
+  const statusEl = document.getElementById("loginStatus");
+
+  statusEl.textContent = "Đang xử lý đăng nhập Google...";
+  statusEl.style.color = "#333";
+  statusEl.style.display = "block";
 
   fetch(getUrl() + "/api/auth/google", {
     method: "POST",
@@ -9,16 +14,18 @@ function handleLogin(response) {
   })
     .then(res => res.json())
     .then(data => {
-
-      gtag('event', 'login', {
-        method: 'google'
-      });
-      
-      handleAuthResponse(data, deviceId);
+      if (data?.token) {
+        gtag('event', 'login', { method: 'google' });
+        handleAuthResponse(data, deviceId);
+      } else {
+        throw new Error(data?.message || "Đăng nhập Google thất bại.");
+      }
     })
     .catch(err => {
       console.error("Lỗi đăng nhập Google:", err);
-      alert("Lỗi đăng nhập Google: " + (err?.message || JSON.stringify(err)));
+      statusEl.textContent = "Lỗi đăng nhập Google: " + (err?.message || "Không rõ nguyên nhân");
+      statusEl.style.color = "red";
+      statusEl.style.display = "block";
     });
 }
 
@@ -33,14 +40,22 @@ function handleEmailLogin(e) {
   const btn = document.getElementById("btnLogin");
   const statusEl = document.getElementById("loginStatus");
 
+  // reset trạng thái label
+  statusEl.textContent = "";
+  statusEl.style.display = "none";
+
   if (!email || !password) {
-    alert("Vui lòng nhập đầy đủ email và mật khẩu.");
+    statusEl.textContent = "Vui lòng nhập đầy đủ email và mật khẩu.";
+    statusEl.style.color = "red";
+    statusEl.style.display = "block";
     return false;
   }
 
   btn.disabled = true;
   btn.textContent = "Đang đăng nhập...";
   statusEl.textContent = "Đang xử lý, vui lòng chờ...";
+  statusEl.style.color = "#333";
+  statusEl.style.display = "block";
 
   fetch(getUrl() + "/api/auth/login", {
     method: "POST",
@@ -50,11 +65,7 @@ function handleEmailLogin(e) {
     .then(res => res.json())
     .then(data => {
       if (data?.token) {
-
-        gtag('event', 'login', {
-          method: 'email'
-        });
-
+        gtag('event', 'login', { method: 'email' });
         handleAuthResponse(data, deviceId);
       } else {
         throw new Error(data?.message || "Sai email hoặc mật khẩu.");
@@ -62,12 +73,13 @@ function handleEmailLogin(e) {
     })
     .catch(err => {
       console.error("Lỗi đăng nhập:", err);
-      alert("Đăng nhập thất bại: " + (err?.message || "Không rõ nguyên nhân"));
+      statusEl.textContent = "Đăng nhập thất bại: " + (err?.message || "Không rõ nguyên nhân");
+      statusEl.style.color = "red";
+      statusEl.style.display = "block";
     })
     .finally(() => {
       btn.disabled = false;
       btn.textContent = "Đăng nhập";
-      statusEl.textContent = "";
     });
 
   return false;
@@ -77,17 +89,26 @@ function handleEmailLogin(e) {
 // Xử lý phản hồi sau khi đăng nhập thành công
 // =====================================
 function handleAuthResponse(data, deviceId) {
+  const statusEl = document.getElementById("loginStatus");
   if (data?.token) {
     localStorage.setItem("accessToken", data.token);
     localStorage.setItem("userEmail", data.email);
 
-    if (Notification.permission === "granted") {
-      window.location.href = "dashboard.html";
-    } else {
-      window.location.href = "notification-permission.html";
-    }
+    statusEl.textContent = "Đăng nhập thành công! Đang chuyển hướng...";
+    statusEl.style.color = "green";
+    statusEl.style.display = "block";
+
+    setTimeout(() => {
+      if (Notification.permission === "granted") {
+        window.location.href = "dashboard.html";
+      } else {
+        window.location.href = "notification-permission.html";
+      }
+    }, 1000);
   } else {
-    alert("Đăng nhập thất bại: " + (data?.message || "Không rõ nguyên nhân"));
+    statusEl.textContent = "Đăng nhập thất bại: " + (data?.message || "Không rõ nguyên nhân");
+    statusEl.style.color = "red";
+    statusEl.style.display = "block";
   }
 }
 
