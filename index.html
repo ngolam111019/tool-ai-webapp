@@ -7,6 +7,31 @@
   <title>Đăng nhập Tool AI</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="css/style.css">
+  <style>
+    .divider {
+      display: flex;
+      align-items: center;
+      text-align: center;
+      color: #6c757d;
+      font-size: 14px;
+      margin: 1rem 0;
+    }
+
+    .divider::before,
+    .divider::after {
+      content: "";
+      flex: 1;
+      border-bottom: 1px solid #dee2e6;
+    }
+
+    .divider:not(:empty)::before {
+      margin-right: .75em;
+    }
+
+    .divider:not(:empty)::after {
+      margin-left: .75em;
+    }
+  </style>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <link rel="manifest" href="manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -46,12 +71,12 @@
     <h5 class="mb-3 font-weight-bold">Đăng nhập Tool AI</h5>
 
     <!-- Google login -->
-    <p>Đăng nhập nhanh (1 chạm) với</p>
+    <p id="sutitleLogin">Đăng nhập nhanh (1 chạm) với</p>
     <div id="g_id_onload" data-client_id="806969458384-k9jefp2tnts2q2rqgobn2f1bi24t6fh5.apps.googleusercontent.com"
       data-callback="handleLogin" data-auto_prompt="false"></div>
     <div class="g_id_signin mb-4" data-type="standard"></div>
 
-    <hr class="my-3">
+    <div class="divider my-3"><span>hoặc</span></div>
 
     <!-- Email login form -->
     <form id="emailLoginForm" onsubmit="return handleEmailLogin(event)">
@@ -66,9 +91,8 @@
       <button type="submit" id="btnLogin" class="btn btn-primary btn-block mt-3">Đăng nhập</button>
     </form>
 
-  <label id="loginStatus" class="mt-3 text-muted small"></label>
+    <div id="loginStatus" class="mt-3 text-muted small"></div>
 
-    <hr class="my-3">
     <a href="forgot-step1.html" class="d-block mt-3 small">Quên mật khẩu?</a>
     <a href="register-step1.html" class="d-block mt-3 small">Chưa có tài khoản? Đăng ký ngay</a>
   </div>
@@ -159,8 +183,17 @@
       if (isIos() && !isInStandaloneMode() && !localStorage.getItem('hideIosGuide')) {
         showAddToHomeScreenPrompt();
       }
-    });
 
+      const googleBtn = document.querySelector(".g_id_signin");
+      const divider = document.querySelector(".divider");
+      const sutitleLogin = document.getElementById("sutitleLogin");
+
+      // Nếu không có Google Identity API hoặc nút Google không tồn tại
+      if (typeof window.google === "undefined" || !window.google.accounts || !googleBtn) {
+        if (divider) divider.style.display = "none";
+        if (sutitleLogin) sutitleLogin.style.display = "none";
+      }
+    });
   </script>
 </body>
 

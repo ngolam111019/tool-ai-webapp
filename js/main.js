@@ -292,7 +292,7 @@ function connectWebSocket(room, pkg) {
           }
           disconnectBtn.remove();
           btnFetch.disabled = false;
-          btnFetch.textContent = "Lấy kết quả";
+          btnFetch.textContent = "Bắt đầu chơi";
           messageEl.textContent = "Đã ngắt kết nối khỏi Zon88.";
 
           // 🔹 Gỡ cảnh báo reload khi đã ngắt kết nối
