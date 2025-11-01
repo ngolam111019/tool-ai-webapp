@@ -1,0 +1,23 @@
+{
+  "name": "tool-ai-webapp",
+  "version": "1.0.0",
+  "main": "service-worker.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ngolam111019/tool-ai-webapp.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ngolam111019/tool-ai-webapp/issues"
+  },
+  "homepage": "https://github.com/ngolam111019/tool-ai-webapp#readme",
+  "description": "",
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
