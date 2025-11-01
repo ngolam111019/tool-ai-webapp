@@ -49,5 +49,5 @@ function showAddToHomeScreenPrompt() {
   };
 }
 
-// Gọi ngay khi load script
-checkDeviceSupport();
+// Đảm bảo chạy sau khi DOM đã sẵn sàng
+window.addEventListener('DOMContentLoaded', checkDeviceSupport);
