@@ -13,17 +13,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Tool AI">
   <link rel="apple-touch-icon" href="assets/icon-192.png">
-  <script>
-    function isIOSDevice() {
-      //return /iPhone|iPad|iPod/i.test(navigator.userAgent);
-      return true;
-    }
-
-    // Nếu không phải thiết bị iOS → chuyển hướng
-    if (!isIOSDevice()) {
-      window.location.href = "unsupported.html";
-    }
-  </script>
+  <script src="js/device-check.js"></script>
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-FERX73KD2F"></script>
   <script>

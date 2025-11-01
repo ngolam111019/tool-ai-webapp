@@ -38,17 +38,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Tool AI">
   <link rel="apple-touch-icon" href="assets/icon-192.png">
-
-  <script>
-    function isIOSDevice() {
-      //return /iPhone|iPad|iPod/i.test(navigator.userAgent);
-      return true;
-    }
-
-    if (!isIOSDevice()) {
-      window.location.href = "unsupported.html";
-    }
-  </script>
+  <script src="js/device-check.js"></script>
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-ABC123XYZ"></script>
   <script>
@@ -148,42 +138,8 @@
     })();
   </script>
   <script>
-    function isIos() {
-      //return /iphone|ipad|ipod/i.test(window.navigator.userAgent);
-      return true;
-    }
-
-    function isInStandaloneMode() {
-      return ('standalone' in window.navigator) && window.navigator.standalone;
-    }
-
-    function showAddToHomeScreenPrompt() {
-      const guide = document.createElement('div');
-      guide.id = 'ios-install-guide';
-      guide.innerHTML = `
-    <div class="guide-overlay">
-      <div class="guide-box">
-        <h3>Thêm Tool AI ra Màn hình chính 📱</h3>
-        <p>Để sử dụng đầy đủ tính năng (thông báo, tự động, v.v), bạn cần thêm ứng dụng ra màn hình chính.</p>
-        <p>Nhấn biểu tượng <img src="/assets/share-icon.png" alt="Share icon" class="icon-share"> sau đó chọn <strong>Thêm vào Màn hình chính</strong>.</p>
-        <button id="closeGuide">Đã hiểu</button>
-      </div>
-    </div>
-  `;
-      document.body.appendChild(guide);
-
-      document.getElementById('closeGuide').onclick = () => {
-        guide.remove();
-        localStorage.setItem('hideIosGuide', '1');
-      };
-    }
-
     // Chạy khi load trang
     window.addEventListener('load', () => {
-      if (isIos() && !isInStandaloneMode() && !localStorage.getItem('hideIosGuide')) {
-        showAddToHomeScreenPrompt();
-      }
-
       const googleBtn = document.querySelector(".g_id_signin");
       const divider = document.querySelector(".divider");
       const sutitleLogin = document.getElementById("sutitleLogin");

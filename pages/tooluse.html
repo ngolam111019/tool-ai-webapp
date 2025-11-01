@@ -14,6 +14,71 @@
     <button id="btnFetch" class="btn btn-primary">Lấy kết quả</button>
     <div id="message" class="text-danger mt-3"></div>
   </div>
+
+  <!-- Hướng dẫn dùng app Twins -->
+  <div id="twins-guide" class="card mt-4" style="display: none;">
+    <div class="card-body">
+      <h5 class="card-title text-primary">📱 Hướng dẫn dùng ứng dụng Twins (dành cho iPhone)</h5>
+      <p class="mb-2">
+        Vì iPhone không cho phép tool AI hiển thị chồng lên ứng dụng khác, bạn có thể
+        <strong>chia đôi màn hình bằng ứng dụng Twins</strong> để dùng song song tool và cổng game.
+      </p>
+      <ol class="mb-3 text-left">
+        <li>Sao chép các link bằng nút bên dưới.</li>
+        <li>Mở ứng dụng <strong>Twins</strong> trên iPhone.</li>
+        <li>Dán link <strong>Tool AI</strong> vào khung thứ nhất.</li>
+        <li>Nếu là <strong>Zon88</strong>, dán link cổng game vào khung thứ hai.</li>
+        <li>Nhấn <strong>Open Both</strong> để mở cùng lúc hai cửa sổ.</li>
+      </ol>
+
+      <div class="border rounded p-3 bg-light text-left mb-2">
+        <strong>Tool AI:</strong><br>
+        <button id="btnCopyTool" class="btn btn-outline-primary btn-sm mt-2">📋 Sao chép link Tool AI</button>
+      </div>
+
+      <div id="gateway-section" class="border rounded p-3 bg-light text-left" style="display: none;">
+        <strong>Cổng game:</strong><br>
+        <button id="btnCopyGateway" class="btn btn-outline-primary btn-sm mt-2">📋 Sao chép link Cổng game Zon88</button>
+      </div>
+    </div>
+  </div>
 </div>
+
+<script>
+  const TOOL_LINK = "http://tool-ai.toolsicbo.com";
+  const ZON88_LINK = "https://zon88.onrender.com";
+
+  // Lấy tên cổng game từ URL
+  const gatewayName = new URLSearchParams(window.location.search).get("gateway") || "";
+
+  // Kiểm tra thiết bị iPhone/iPad
+  const isIphone = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (isIphone) {
+    document.getElementById("twins-guide").style.display = "block";
+  }
+
+  // Hiển thị phần hướng dẫn cổng game nếu là Zon88
+  if (gatewayName.toLowerCase().includes("zon88")) {
+    document.getElementById("gateway-section").style.display = "block";
+  }
+
+  // Xử lý sao chép
+  document.getElementById("btnCopyTool").addEventListener("click", () => {
+    copyToClipboard(TOOL_LINK, "✅ Link Tool AI đã được sao chép!");
+  });
+
+  const btnCopyGateway = document.getElementById("btnCopyGateway");
+  if (btnCopyGateway) {
+    btnCopyGateway.addEventListener("click", () => {
+      copyToClipboard(ZON88_LINK, "✅ Link cổng game Zon88 đã được sao chép!");
+    });
+  }
+
+  function copyToClipboard(text, msg) {
+    navigator.clipboard.writeText(text)
+      .then(() => alert(msg))
+      .catch(() => alert("Không thể sao chép link, vui lòng thử lại."));
+  }
+</script>
 
 <script src="../js/main.js"></script>
