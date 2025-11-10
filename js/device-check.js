@@ -1,5 +1,6 @@
 function isIosDevice() {
-  return /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+  //return /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+  return true;
 }
 
 function isInStandaloneMode() {
