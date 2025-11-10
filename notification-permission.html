@@ -116,22 +116,35 @@
         throw new Error('Trình duyệt của bạn không hỗ trợ Service Worker.');
       }
 
+      // 1️⃣ Đăng ký hoặc lấy service worker hiện có
       const reg = await navigator.serviceWorker.register('/service-worker.js');
-      const sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array('BBeZbEwXml_v93n0caqGDxOEdX8WMjFMc018zOtujFo-w6mTLDWDqXqGot4CoyFz0VJUKiYCA6TmDUq9Bk4964U')
-      });
+      console.log('Service Worker đăng ký thành công:', reg);
 
-      const token = localStorage.getItem('accessToken');
+      // 2️⃣ Chờ service worker kích hoạt hoàn toàn
+      const sw = await navigator.serviceWorker.ready;
 
-      if (!token) {
-        throw new Error('Không tìm thấy token trong localStorage.');
+      // 3️⃣ Kiểm tra nếu đã có subscription cũ
+      let sub = await sw.pushManager.getSubscription();
+      if (!sub) {
+        console.log("Chưa có subscription, tạo mới...");
+        sub = await sw.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(
+            'BBeZbEwXml_v93n0caqGDxOEdX8WMjFMc018zOtujFo-w6mTLDWDqXqGot4CoyFz0VJUKiYCA6TmDUq9Bk4964U'
+          ),
+        });
+      } else {
+        console.log("Đã có subscription cũ, dùng lại.");
       }
+
+      // 4️⃣ Gửi subscription lên server
+      const token = localStorage.getItem('accessToken');
+      if (!token) throw new Error('Không tìm thấy token trong localStorage.');
 
       const headers = {
         'Content-Type': 'application/json',
         Authorization: 'Bearer ' + token,
-        'x-device-id': getDeviceId()
+        'x-device-id': getDeviceId(),
       };
 
       const res = await fetch(getUrl() + '/api/auth/save-web-subscription', {
@@ -139,17 +152,15 @@
         headers,
         body: JSON.stringify({
           platform: 'web',
-          subscription: sub
-        })
+          subscription: sub,
+        }),
       });
 
-      if (!res.ok) {
-        throw new Error('Không thể lưu thông tin đăng ký lên server.');
-      }
+      if (!res.ok) throw new Error('Không thể lưu thông tin đăng ký lên server.');
 
       console.log('✅ Đã đăng ký subscription thành công');
     }
-
+    
     function urlBase64ToUint8Array(base64String) {
       const padding = '='.repeat((4 - base64String.length % 4) % 4);
       const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
