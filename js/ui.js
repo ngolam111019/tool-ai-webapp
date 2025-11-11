@@ -21,6 +21,20 @@ function loadPage(pageName, params = {}) {
   $('#content').load(fullPath, function (response, status) {
     if (status === "success") {
       setPageTitleByFile(pageName + ".html", params);
+
+      // ✅ Gọi init tương ứng
+      switch (pageName) {
+        case "tool":
+          if (typeof initToolPage === "function") initToolPage();
+          break;
+        case "tooluse":
+          if (typeof initToolUsePage === "function") initToolUsePage();
+          break;
+        case "notifications":
+          if (typeof initNotificationsPage === "function") initNotificationsPage();
+          break;
+      }
+
     } else {
       $("#content").html("<p class='text-danger'>Không thể tải trang.</p>");
     }
@@ -50,6 +64,7 @@ function setPageTitleByFile(path, params) {
   const map = {
     "tooluse.html": "🤖 Tool" + (params && params.name ? " " + params.name : ".ai"),
     "tool.html": "🤖 tool.ai",
+    "notifications.html": "🔔 Thông báo",
     "packages.html": "👑 Nâng cấp",
     "account.html": "🔐 Tài khoản",
     "payment.html": "💳 Thanh toán",
@@ -64,3 +79,35 @@ async function registerServiceWorker() {
         return await navigator.serviceWorker.register('/service-worker.js');
     }
 }
+
+function updateUnreadBadge() {
+  const badge = document.getElementById("notiBadge");
+  if (!badge) return;
+
+  const notiList = JSON.parse(localStorage.getItem("notifications") || "[]");
+  const unreadCount = notiList.filter(n => !n.read).length;
+
+  if (unreadCount > 0) {
+    badge.textContent = unreadCount;
+    badge.style.display = "inline-block";
+  } else {
+    badge.style.display = "none";
+  }
+}
+
+// Gọi khi load footer xong
+document.addEventListener("DOMContentLoaded", updateUnreadBadge);
+
+navigator.serviceWorker.addEventListener("message", (event) => {
+  if (event.data?.type === "PUSH_RECEIVED") {
+    const noti = event.data.notification;
+    const current = JSON.parse(localStorage.getItem("notifications") || "[]");
+    current.unshift(noti);
+    localStorage.setItem("notifications", JSON.stringify(current));
+    updateUnreadBadge();
+  }
+
+  if (event.data?.type === "OPEN_NOTIFICATIONS_PAGE") {
+    loadPage("notifications");
+  }
+});

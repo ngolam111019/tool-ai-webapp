@@ -9,75 +9,70 @@ var pageMain = new URLSearchParams(window.location.search).get("page");
 var webSocket1;
 
 // ==========================
-// 🔹 Nếu là trang tooluse.html → chỉ xử lý logic lấy kết quả
+// 🔹 Trang tool.html
 // ==========================
-if (pageMain === "tooluse") {
-  //debugger
+async function initToolPage() {
+  try {
+    const data = await loadAccountInfo();
+    if (data) {
+      renderAccountInfo(data);
+    } else {
+      $("#account-info").html("<p class='text-danger'>Không thể tải thông tin tài khoản.</p>");
+    }
+    loadGateways();
+  } catch (err) {
+    console.error("Lỗi initToolPage:", err);
+  }
+}
+
+
+// ==========================
+// 🔹 Trang tooluse.html
+// ==========================
+async function initToolUsePage() {
+  const urlParams = new URLSearchParams(window.location.search);
   const gateway = urlParams.get("gateway");
   const gatewayName = urlParams.get("name") || gateway;
 
-  // Khởi tạo DOM
-  var resultEl = document.getElementById("txtKetQua");
-  var messageEl = document.getElementById("message");
-  var luotEl = document.getElementById("txtLuot");
-  var btnFetch = document.getElementById("btnFetch");
-  var _pkg;
+  // DOM elements
+  resultEl = document.getElementById("txtKetQua");
+  messageEl = document.getElementById("message");
+  luotEl = document.getElementById("txtLuot");
+  btnFetch = document.getElementById("btnFetch");
+  _pkg = null;
   btnFetch.textContent = "Bắt đầu chơi";
 
-  // Gán tên cổng game
   const gatewayNameEl = document.getElementById("gateway-name");
   if (gatewayNameEl) gatewayNameEl.textContent = gatewayName;
 
-  // Nút quay lại
   const backBtn = document.getElementById("btnBack");
   if (backBtn) {
     backBtn.addEventListener("click", () => {
-      const newUrl = `dashboard.html?page=tool`;
-      window.location.href = newUrl;
+      loadPage("tool");
     });
   }
 
-  // Tải thông tin gói
-  loadAccountInfo().then(data => {
-    if (data) {
-      _pkg = data;
-      const pkg = data.package;
-      const turnsLeft = pkg.max_turns_per_day - pkg.turns_used_today;
-      if (luotEl) luotEl.textContent = `🎮 Còn ${turnsLeft} lượt/ngày`;
-    }
-  });
+  // Load gói & lượt còn lại
+  const data = await loadAccountInfo();
+  if (data) {
+    _pkg = data;
+    const pkg = data.package;
+    const turnsLeft = pkg.max_turns_per_day - pkg.turns_used_today;
+    if (luotEl) luotEl.textContent = `🎮 Còn ${turnsLeft} lượt/ngày`;
+  }
 
-  // Khi bấm nút "Lấy kết quả"
+  // Khi bấm nút Lấy kết quả
   if (btnFetch) {
     btnFetch.addEventListener("click", async () => {
       if (gateway === "Zon88") {
-        // Đổi text tạm thời trong khi đang chờ kết nối
         btnFetch.disabled = true;
         btnFetch.textContent = "Đang kết nối...";
         connectWebSocket(gateway, _pkg);
       } else {
-        // 🟢 Các cổng game khác xử lý như hiện tại
         await fetchPredictionDirect(gateway);
       }
     });
   }
-}
-
-// ==========================
-// 🔹 Nếu là trang tool.html → chỉ load danh sách cổng game
-// ==========================
-if (pageMain === "tool") {
-  loadAccountInfo().then(data => {
-    if (data) {
-      renderAccountInfo(data);
-      //renderFloatingViewInfo(data);
-    } else {
-      const el = document.getElementById("account-info");
-      if (el) el.innerHTML = "<p class='text-danger'>Không thể tải thông tin tài khoản.</p>";
-    }
-  });
-
-  loadGateways();
 }
 
 // ==========================
@@ -236,9 +231,7 @@ async function fetchPredictionDirect(gateway) {
 // ==========================
 
 function showFloatingView(gatewayId, gatewayName) {
-  const newUrl = `dashboard.html?page=tooluse&gateway=${encodeURIComponent(gatewayId)}&name=${encodeURIComponent(gatewayName)}`;
-  window.location.href = newUrl;
-  //loadPage('tooluse', {gateway: gatewayId, name: gatewayName});
+  loadPage('tooluse', { gateway: gatewayId, name: gatewayName });
 }
 
 function resetFormFloatingView() {
