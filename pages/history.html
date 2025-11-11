@@ -22,6 +22,15 @@ function getStatusText(status) {
   }
 }
 
+function getColorStatus(status) {
+  switch (status) {
+    case 'success': return 'text-success';
+    case 'pending': return 'text-muted';
+    case 'failed':  return 'text-danger';
+    default:        return 'text-muted';
+  }
+}
+
 
 function getTypeText(status) {
   switch (status) {
@@ -44,7 +53,7 @@ function renderTransaction(tx) {
           <div class="text-muted small">${formatDateTimeVN(tx.created_at)}</div>
           <div class="small">Trạng thái: <span class="text-capitalize">${getStatusText(tx.status)}</span></div>
         </div>
-        <div class="ml-3 text-${sign === '+' ? 'success' : 'danger'} font-weight-bold">
+        <div class="ml-3 ${getColorStatus(tx.status)} font-weight-bold">
           ${sign}${formatThousandsVN(amount)} xu
         </div>
       </div>
