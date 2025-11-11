@@ -129,7 +129,10 @@
     function startPaymentSocket(txid) {
         if (socket) socket.disconnect();
 
-        socket = io(getUrl());
+        socket = io(getUrl(), {
+            transports: ["websocket"], // tránh fallback polling
+            path: "/socket.io/"
+        });
 
         socket.emit("join_payment_room", txid);
 
