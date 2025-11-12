@@ -99,7 +99,7 @@ function initNotificationsPage() {
       "package": "/dashboard.html?page=packages",
       "history": "/dashboard.html?page=history",
       "account": "/dashboard.html?page=account",
-      "trial": "/dashboard.html?page=tooluse&gateway=Zon88&name=Zon%2088"
+      "trial": "/dashboard.html?page=tooluse&gateway=Zon88&name=Zon 88"
     };
 
     const redirectUrl = map[screen] || null;
