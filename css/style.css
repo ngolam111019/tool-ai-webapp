@@ -161,3 +161,43 @@ body {
   color: #fff;
   border-radius: 8px;
 }
+
+/* Hiệu ứng nhấn nút bottom như app native */
+.menu-btn {
+  position: relative;
+  overflow: hidden;
+  color: #555;
+  transition: background 0.2s ease, transform 0.1s ease;
+  border-radius: 8px;
+}
+
+.menu-btn.active {
+  color: #007bff;
+}
+
+.menu-btn:active {
+  background: rgba(0, 0, 0, 0.05);
+  transform: scale(0.97);
+}
+
+/* Hiệu ứng ripple */
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  transform: scale(0);
+  background: rgba(0, 123, 255, 0.3);
+  animation: ripple-animation 0.6s linear;
+  pointer-events: none;
+}
+
+@keyframes ripple-animation {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* Khi giữ lâu trên mobile */
+.menu-btn.pressed {
+  background: rgba(0, 0, 0, 0.08);
+}

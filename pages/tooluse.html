@@ -45,14 +45,14 @@
 </div>
 
 <script>
-  const TOOL_LINK = "https://tool-ai-d5e0cf325a20.herokuapp.com";
-  const ZON88_LINK = "https://zon88.onrender.com";
+  var TOOL_LINK = "https://tool-ai-d5e0cf325a20.herokuapp.com";
+  var ZON88_LINK = "https://zon88.onrender.com";
 
   // Lấy tên cổng game từ URL
-  const gatewayName = new URLSearchParams(window.location.search).get("gateway") || "";
+  var gatewayName = new URLSearchParams(window.location.search).get("gateway") || "";
 
   // Kiểm tra thiết bị iPhone/iPad
-  const isIphone = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  var isIphone = /iPhone|iPad|iPod/i.test(navigator.userAgent);
   if (isIphone) {
     document.getElementById("twins-guide").style.display = "block";
   }
@@ -67,7 +67,7 @@
     copyToClipboard(TOOL_LINK, "✅ Link Tool AI đã được sao chép!");
   });
 
-  const btnCopyGateway = document.getElementById("btnCopyGateway");
+  var btnCopyGateway = document.getElementById("btnCopyGateway");
   if (btnCopyGateway) {
     btnCopyGateway.addEventListener("click", () => {
       copyToClipboard(ZON88_LINK, "✅ Link cổng game Zon88 đã được sao chép!");

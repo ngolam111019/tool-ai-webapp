@@ -3,10 +3,25 @@ function loadHeader() {
 }
 
 function loadFooter() {
-  $("#footer").load("components/footer.html");
+  $("#footer").load("components/footer.html", function () {
+    initFooterMenu(); // gắn lại ripple + click sau khi footer được chèn vào
+  });
+}
+
+function showLoader() {
+  const loader = document.getElementById("page-loader");
+  loader.classList.remove("d-none");
+  setTimeout(() => loader.classList.add("active"), 10);
+}
+
+function hideLoader() {
+  const loader = document.getElementById("page-loader");
+  loader.classList.remove("active");
+  setTimeout(() => loader.classList.add("d-none"), 300);
 }
 
 function loadPage(pageName, params = {}) {
+  showLoader();
   // Tạo query string nếu có params
   let query = '';
   const keys = Object.keys(params);
@@ -34,9 +49,11 @@ function loadPage(pageName, params = {}) {
           if (typeof initNotificationsPage === "function") initNotificationsPage();
           break;
       }
+      hideLoader();
 
     } else {
       $("#content").html("<p class='text-danger'>Không thể tải trang.</p>");
+      hideLoader();
     }
   });
 
@@ -111,3 +128,35 @@ navigator.serviceWorker.addEventListener("message", (event) => {
     loadPage("notifications");
   }
 });
+
+function initFooterMenu() {
+  const buttons = document.querySelectorAll(".menu-btn");
+  if (!buttons.length) return; // footer chưa load, thoát
+
+  buttons.forEach(btn => {
+    btn.addEventListener("click", function (e) {
+      // Hiệu ứng ripple
+      const ripple = document.createElement("span");
+      ripple.classList.add("ripple");
+      this.appendChild(ripple);
+
+      const rect = this.getBoundingClientRect();
+      ripple.style.width = ripple.style.height = Math.max(rect.width, rect.height) + "px";
+      ripple.style.left = e.clientX - rect.left - rect.width / 2 + "px";
+      ripple.style.top = e.clientY - rect.top - rect.height / 2 + "px";
+
+      setTimeout(() => ripple.remove(), 600);
+
+      // Active menu
+      document.querySelectorAll(".menu-btn").forEach(b => b.classList.remove("active"));
+      this.classList.add("active");
+
+      // Gọi loadPage
+      const page = this.getAttribute("data-page");
+      if (page) loadPage(page);
+    });
+
+    btn.addEventListener("touchstart", () => btn.classList.add("pressed"));
+    btn.addEventListener("touchend", () => btn.classList.remove("pressed"));
+  });
+}

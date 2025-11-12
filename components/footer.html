@@ -1,11 +1,12 @@
 <nav class="navbar fixed-bottom navbar-light bg-light border-top">
   <div class="container d-flex justify-content-around text-center">
-    <button class="btn btn-link" onclick="loadPage('tool')">
+
+    <button class="btn btn-link menu-btn" data-page="tool">
       <div><i class="fas fa-robot"></i></div>
       <small>Tool</small>
     </button>
 
-    <button class="btn btn-link position-relative" onclick="loadPage('notifications')">
+    <button class="btn btn-link menu-btn position-relative" data-page="notifications">
       <div style="position: relative;">
         <i class="fas fa-bell"></i>
         <span id="notiBadge"
@@ -16,13 +17,15 @@
       <small>T.báo</small>
     </button>
 
-    <button class="btn btn-link" onclick="loadPage('packages')">
+    <button class="btn btn-link menu-btn" data-page="packages">
       <div><i class="fas fa-gem"></i></div>
       <small>Gói</small>
     </button>
-    <button class="btn btn-link" onclick="loadPage('account')">
+
+    <button class="btn btn-link menu-btn" data-page="account">
       <div><i class="fas fa-user"></i></div>
       <small>T.khoản</small>
     </button>
+
   </div>
 </nav>
