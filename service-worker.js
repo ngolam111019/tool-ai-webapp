@@ -26,7 +26,7 @@ self.addEventListener("push", (event) => {
   }
 
   const title = data.title || "Tool AI";
-  const message = data.body || "Bạn có thông báo mới!";
+  const message = data.message || "Bạn có thông báo mới!";
   const icon = data.icon || "/assets/ic_launcher_round.png";
   const badge = data.badge || "/assets/ic_launcher_round.png";
   const btnText = data.btnText || "";
