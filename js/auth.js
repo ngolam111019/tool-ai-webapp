@@ -16,7 +16,7 @@ function handleLogin(response) {
     .then(data => {
       if (data?.token) {
         gtag('event', 'login', { method: 'google' });
-        handleAuthResponse(data, deviceId);
+        handleAuthResponse(data);
       } else {
         throw new Error(data?.message || "Đăng nhập Google thất bại.");
       }
@@ -66,7 +66,7 @@ function handleEmailLogin(e) {
     .then(data => {
       if (data?.token) {
         gtag('event', 'login', { method: 'email' });
-        handleAuthResponse(data, deviceId);
+        handleAuthResponse(data);
       } else {
         throw new Error(data?.message || "Sai email hoặc mật khẩu.");
       }
@@ -88,7 +88,7 @@ function handleEmailLogin(e) {
 // =====================================
 // Xử lý phản hồi sau khi đăng nhập thành công
 // =====================================
-function handleAuthResponse(data, deviceId) {
+function handleAuthResponse(data) {
   const statusEl = document.getElementById("loginStatus");
   if (data?.token) {
     localStorage.setItem("accessToken", data.token);
@@ -99,7 +99,10 @@ function handleAuthResponse(data, deviceId) {
     statusEl.style.display = "block";
 
     setTimeout(() => {
-      if (Notification.permission === "granted") {
+      if (data.isSub == false) {
+        window.location.href = "notification-permission.html";
+      }
+      else if (Notification.permission == "granted") {
         window.location.href = "dashboard.html";
       } else {
         window.location.href = "notification-permission.html";
