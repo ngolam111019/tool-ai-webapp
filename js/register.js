@@ -153,7 +153,10 @@ function handleConfirmRegister(e) {
       alert(data.message || "Đăng ký tài khoản thành công!");
 
       // Chuyển hướng như flow đăng nhập
-      if (Notification.permission === "granted") {
+      if (data.isSub == false) {
+        window.location.href = "notification-permission.html";
+      }
+      else if (Notification.permission === "granted") {
         window.location.href = "dashboard.html";
       } else {
         window.location.href = "notification-permission.html";
