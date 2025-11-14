@@ -43,12 +43,13 @@
             if (pkg.is_gift == "1") {
                 name = name + " (🎁 bí kíp)";
             }
-            
+
             return `
                 <div class="card shadow-sm" style="min-width: 250px; background-color: ${pkg.bg_color || '#343a40'};">
                     <div class="card-body">
                     <h5 class="card-title" style="color: ${pkg.color || '#fff'}">${name}</h5>` +
                 (pkg.price_2 > 0 ? `
+                    <p class="card-text text-danger small" id="countdown-${pkg.id}"></p>
                     <p class="card-text h6" style="text-decoration: line-through">${formatThousandsVNXu(pkg.price_2) || ''}</p>` : ``) + `
                     <p class="card-text text-danger h4">${formatThousandsVNXu(pkg.price) || ''}</p>
                     <p class="card-text h6">${getExpiredInfo(pkg) || ''}</p>
@@ -62,7 +63,7 @@
         }).join("");
 
         document.getElementById("package-list").innerHTML = html;
-        
+
         gtag('event', 'view_packages', {
             page_title: 'Trang nâng cấp gói',
             user_email: localStorage.getItem("userEmail")
@@ -160,5 +161,70 @@
     }
     function getExpiredInfo(pkg) {
         return "Sử dụng " + pkg.duration_days + " ngày - " + pkg.max_turns_per_day + " lượt/ngày";
+    }
+
+    // ===============================
+    // 🔥 COUNTDOWN ƯU ĐÃI CHO MỖI GÓI
+    // ===============================
+    function initCountdownForPackages(packages) {
+        packages.forEach(pkg => {
+            const countdownKey = "countdown_pkg_" + pkg.id;
+            let expiredAt = localStorage.getItem(countdownKey);
+
+            // Nếu chưa có thì set 24h từ lúc user nhìn thấy gói
+            if (!expiredAt) {
+                const now = Date.now();
+                expiredAt = now + 24 * 60 * 60 * 1000; // 24h
+                localStorage.setItem(countdownKey, expiredAt);
+            } else {
+                expiredAt = parseInt(expiredAt);
+            }
+
+            startCountdown(pkg, expiredAt);
+        });
+    }
+
+    function startCountdown(pkg, expiredAt) {
+        const el = document.getElementById("countdown-" + pkg.id);
+        if (!el) return;
+
+        const price = parseInt(pkg.price);
+        const price2 = parseInt(pkg.price_2 || 0);
+        let percent = 0;
+
+        if (price2 > 0 && price < price2) {
+            percent = Math.round((1 - price / price2) * 100);
+        }
+
+        const timer = setInterval(() => {
+            const now = Date.now();
+            let diff = expiredAt - now;
+
+            if (diff <= 0) {
+                el.innerHTML = `⚠️ Ưu đãi đã kết thúc`;
+                clearInterval(timer);
+                return;
+            }
+
+            const h = Math.floor(diff / 3600000);
+            diff %= 3600000;
+
+            const m = Math.floor(diff / 60000);
+            diff %= 60000;
+
+            const s = Math.floor(diff / 1000);
+
+            el.innerHTML =
+                `⏳ Ưu đãi giảm ${percent}% – còn: ${h.toString().padStart(2, '0')}:` +
+                `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+
+        }, 1000);
+    }
+
+    // Gọi countdown sau khi renderPackages
+    var _oldRenderPackages = renderPackages;
+    renderPackages = function (data) {
+        _oldRenderPackages(data);
+        setTimeout(() => initCountdownForPackages(data), 200);
     }
 </script>
