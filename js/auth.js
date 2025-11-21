@@ -90,6 +90,7 @@ function handleEmailLogin(e) {
 // =====================================
 function handleAuthResponse(data) {
   const statusEl = document.getElementById("loginStatus");
+  console.log(data.usedTrial);
   if (data?.token) {
     localStorage.setItem("accessToken", data.token);
     localStorage.setItem("userEmail", data.email);
@@ -99,13 +100,20 @@ function handleAuthResponse(data) {
     statusEl.style.display = "block";
 
     setTimeout(() => {
+      const nextUrl = new URL("notification-permission.html", window.location.origin);
+      nextUrl.searchParams.set("usedTrial", data.usedTrial);
       if (data.isSub == false) {
-        window.location.href = "notification-permission.html";
+        window.location.href = nextUrl;
       }
       else if (Notification.permission == "granted") {
-        window.location.href = "dashboard.html";
+        if(data.usedTrial > 0){
+          window.location.href = "dashboard.html";
+        }
+        else {
+          window.location.href = "dashboard.html?page=intro-trial";
+        }
       } else {
-        window.location.href = "notification-permission.html";
+        window.location.href = nextUrl;
       }
     }, 1000);
   } else {

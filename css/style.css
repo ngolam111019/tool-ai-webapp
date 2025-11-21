@@ -201,3 +201,12 @@ body {
 .menu-btn.pressed {
   background: rgba(0, 0, 0, 0.08);
 }
+
+.blink-text {
+  animation: blink 600ms infinite alternate;
+}
+
+@keyframes blink {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}

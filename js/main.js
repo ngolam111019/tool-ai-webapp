@@ -16,10 +16,10 @@ async function initToolPage() {
     const data = await loadAccountInfo();
     if (data) {
       renderAccountInfo(data);
+      loadGateways(data.package);
     } else {
       $("#account-info").html("<p class='text-danger'>Không thể tải thông tin tài khoản.</p>");
     }
-    loadGateways();
   } catch (err) {
     console.error("Lỗi initToolPage:", err);
   }
@@ -79,12 +79,12 @@ async function initToolUsePage() {
 // 🔹 Các hàm dùng chung
 // ==========================
 
-async function loadGateways(forceRefresh = false) {
+async function loadGateways(pkg, forceRefresh = false) {
   var cacheKey = "gateways";
   var cached = getDailyCache(cacheKey);
 
   if (cached && !forceRefresh) {
-    renderGateways(cached);
+    renderGateways(pkg, cached);
     return;
   }
 
@@ -97,7 +97,7 @@ async function loadGateways(forceRefresh = false) {
     });
 
     var data = await res.json();
-    renderGateways(data);
+    renderGateways(pkg, data);
     setDailyCache(cacheKey, data);
   } catch (err) {
     console.error("Lỗi khi load gateway:", err);
@@ -107,15 +107,35 @@ async function loadGateways(forceRefresh = false) {
   }
 }
 
-function renderGateways(gateways) {
-  var html = gateways.map(gw => `
+function renderGateways(pkg, gateways) {
+
+
+  var html = gateways.map(gw => {
+    var msgExpired = '';
+    if (pkg.id == 0 && pkg.gateways.length > 0) {
+      pkg.gateways.forEach(function (name, index) {
+        if (gw.name == name) { 
+          var expiredStr;
+          if (pkg.expired_at == null || pkg.expired_at == 'null') {
+            expiredStr = '';
+          }
+          else {
+            expiredStr =  (isExpiredFunc(pkg.expired_at)? "đã hết hạn ":"sẽ hết hạn ") + formatDateTimeVN(pkg.expired_at);
+          }
+          msgExpired = '<div class="text-danger small blink-text">' + (pkg.max_turns_per_day - pkg.turns_used_today) + ' lượt miễn phí ' + expiredStr + '</div>';
+        }
+      });
+    }
+    return `
       <div class="col-6 col-md-4 col-lg-3 mb-4">
         <div class="gateway-card" onclick="showFloatingView('${gw.name}', '${gw.display_name}')">
           <img src="assets/${gw.logo}.png" alt="${gw.display_name}">
           <div><strong>${gw.display_name}</strong></div>
+          ${msgExpired}
         </div>
       </div>
-    `).join("");
+    `;
+  }).join("");
 
   $("#gateway-list").html(html);
 }

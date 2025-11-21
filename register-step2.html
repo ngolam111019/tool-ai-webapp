@@ -1,15 +1,22 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Xác nhận OTP - Tool AI</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
 </head>
+
 <body class="d-flex justify-content-center align-items-center vh-100">
 
   <div class="card p-4 shadow-sm text-center" style="max-width:400px;width:100%;">
     <h5 class="mb-3 font-weight-bold">Nhập mã OTP</h5>
+    <p class="mb-3 text-left small">
+      Mã OTP đã được gửi đến: <span id="emailDisplay" class="font-weight-bold"></span><br>
+      Vui lòng kiểm tra hộp thư đến hoặc thư rác (spam).<br>
+      Nếu email không đúng, hãy quay lại bước trước để nhập lại.
+    </p>
     <form id="otpForm" onsubmit="return handleVerifyOtp(event)">
       <div class="form-group text-left">
         <label for="otp">Mã OTP đã gửi đến email của bạn</label>
@@ -18,10 +25,25 @@
       <button id="btnVerifyOtp" type="submit" class="btn btn-success btn-block">Xác nhận</button>
       <div id="status" class="mt-3 small text-muted"></div>
     </form>
-    <a href="register-step1.html" class="d-block mt-3 small">← Nhập lại email</a>
+    <a href="register-step1.html" class="d-block mt-3 small text-primary">← Quay lại nhập email</a>
+  </div>
+  <link rel="stylesheet" href="css/register.css">
+
+  <div id="loadingOverlay">
+    <div class="spinner"></div>
   </div>
 
-  <script src="js/utils-url.js"></script>
-  <script src="js/register.js"></script>
+  <div id="toast"></div>
+  <script>
+    const email = new URLSearchParams(window.location.search).get("email");
+    if (email) {
+      document.getElementById('emailDisplay').innerText = email;
+    }
+  </script>
+ <script src="js/utils-url.js"></script>
+  <script src="js/register/register-ui.js"></script>
+  <script src="js/register/register-api.js"></script>
+  <script src="js/register/register-flow.js"></script>
 </body>
+
 </html>

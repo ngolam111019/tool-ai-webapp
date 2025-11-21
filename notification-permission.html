@@ -92,10 +92,19 @@
       try {
         const permission = await Notification.requestPermission();
 
+        var params = new URLSearchParams(window.location.search);
+        var usedTrial = params.get("usedTrial") || 0;
+
+
         if (permission === 'granted') {
           console.log("✅ Quyền đã được cấp");
           await registerPush();
-          window.location.href = 'dashboard.html?page=tool';
+          if(usedTrial > 0) {
+            window.location.href = 'dashboard.html?page=tool';
+          }
+          else {
+            window.location.href = 'dashboard.html?page=intro-trial';
+          }
         } else if (permission === 'denied') {
           deniedMsg.classList.remove('hidden');
           btnAllow.disabled = false;

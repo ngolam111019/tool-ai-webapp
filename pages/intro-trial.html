@@ -1,0 +1,59 @@
+<div class="container mt-3">
+
+  <!-- Card giới thiệu trial -->
+  <div class="card mb-3">
+    <div class="card-body">
+
+      <!-- Tiêu đề -->
+      <div class="h5 font-weight-bold">
+        🎁 Bạn đã nhận 5 lượt sử dụng miễn phí
+      </div>
+
+      <!-- Subtitle -->
+      <div class="text-muted small mt-2">
+        Lượt dùng thử có hiệu lực trong 24 giờ kể từ khi bạn bắt đầu.
+      </div>
+
+      <!-- Box lợi ích -->
+      <div class="card mt-3">
+        <div class="card-body p-3">
+          <div class="font-weight-bold" style="font-size: 15px;">
+            Bạn sẽ nhận được gì?
+          </div>
+
+          <div class="text-muted small mt-2" style="white-space: pre-line;">
+- Dự đoán kết quả Tài/Xỉu theo thời gian thực
+- Test uy tín và hiệu quả của tool với cổng game
+- Hiểu cách tool AI hoạt động để tự tin xuống tiền hơn
+          </div>
+        </div>
+      </div>
+
+      <!-- Note -->
+      <div class="text-muted small mt-3">
+        Mẹo: Dùng thử liên tục 5 lượt trong cùng 1 lần chơi để thấy rõ sức mạnh của tool.
+      </div>
+
+      <!-- Nút dùng thử -->
+      <button id="btnStartTrial" class="btn btn-primary btn-block mt-4 py-2">
+        Bắt đầu dùng thử ngay
+      </button>
+
+      <!-- Info nhỏ -->
+      <div class="text-center text-muted small mt-3">
+        Lượt dùng thử chỉ được kích hoạt 1 lần cho mỗi tài khoản.
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // Logic bắt đầu trial
+  async function startTrial() {
+    loadPage('tooluse', { gateway: "Zon88", name: "Zon 88" });
+  }
+
+  document.getElementById("btnStartTrial").addEventListener("click", startTrial);
+</script>
