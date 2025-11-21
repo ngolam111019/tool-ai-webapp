@@ -164,17 +164,15 @@
     }
 
     // ===============================
-    // 🔥 COUNTDOWN ƯU ĐÃI CHO MỖI GÓI
+    // 🔥 COUNTDOWN ƯU ĐÃI LẶP VÒNG 24H
     // ===============================
     function initCountdownForPackages(packages) {
         packages.forEach(pkg => {
             const countdownKey = "countdown_pkg_" + pkg.id;
             let expiredAt = localStorage.getItem(countdownKey);
 
-            // Nếu chưa có thì set 24h từ lúc user nhìn thấy gói
             if (!expiredAt) {
-                const now = Date.now();
-                expiredAt = now + 24 * 60 * 60 * 1000; // 24h
+                expiredAt = Date.now() + 24 * 60 * 60 * 1000; // 24h
                 localStorage.setItem(countdownKey, expiredAt);
             } else {
                 expiredAt = parseInt(expiredAt);
@@ -190,8 +188,8 @@
 
         const price = parseInt(pkg.price);
         const price2 = parseInt(pkg.price_2 || 0);
-        let percent = 0;
 
+        let percent = 0;
         if (price2 > 0 && price < price2) {
             percent = Math.round((1 - price / price2) * 100);
         }
@@ -200,10 +198,11 @@
             const now = Date.now();
             let diff = expiredAt - now;
 
+            // ❗️Khi hết hạn 24h -> bắt đầu lại vòng mới 24h
             if (diff <= 0) {
-                el.innerHTML = `⚠️ Ưu đãi đã kết thúc`;
-                clearInterval(timer);
-                return;
+                expiredAt = Date.now() + 24 * 60 * 60 * 1000;
+                localStorage.setItem("countdown_pkg_" + pkg.id, expiredAt);
+                diff = expiredAt - now;
             }
 
             const h = Math.floor(diff / 3600000);
@@ -215,13 +214,15 @@
             const s = Math.floor(diff / 1000);
 
             el.innerHTML =
-                `⏳ Ưu đãi giảm ${percent}% – còn: ${h.toString().padStart(2, '0')}:` +
-                `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+                `⏳ Ưu đãi giảm ${percent}% – còn: ` +
+                `${h.toString().padStart(2, '0')}:` +
+                `${m.toString().padStart(2, '0')}:` +
+                `${s.toString().padStart(2, '0')}`;
 
         }, 1000);
     }
 
-    // Gọi countdown sau khi renderPackages
+    // Gọi countdown sau renderPackages
     var _oldRenderPackages = renderPackages;
     renderPackages = function (data) {
         _oldRenderPackages(data);
