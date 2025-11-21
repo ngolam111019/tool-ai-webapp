@@ -114,15 +114,18 @@ function renderGateways(pkg, gateways) {
     var msgExpired = '';
     if (pkg.id == 0 && pkg.gateways.length > 0) {
       pkg.gateways.forEach(function (name, index) {
-        if (gw.name == name) { 
+        if (gw.name == name) {
           var expiredStr;
-          if (pkg.expired_at == null || pkg.expired_at == 'null') {
-            expiredStr = '';
+          var turns = pkg.max_turns_per_day - pkg.turns_used_today;
+          if (turns > 0) {
+            if (pkg.expired_at == null || pkg.expired_at == 'null') {
+              expiredStr = '';
+            }
+            else {
+              expiredStr = (isExpiredFunc(pkg.expired_at) ? "đã hết hạn " : "sẽ hết hạn ") + formatDateTimeVN(pkg.expired_at);
+            }
+            msgExpired = '<div class="text-danger small blink-text">' + turns + ' lượt miễn phí ' + expiredStr + '</div>';
           }
-          else {
-            expiredStr =  (isExpiredFunc(pkg.expired_at)? "đã hết hạn ":"sẽ hết hạn ") + formatDateTimeVN(pkg.expired_at);
-          }
-          msgExpired = '<div class="text-danger small blink-text">' + (pkg.max_turns_per_day - pkg.turns_used_today) + ' lượt miễn phí ' + expiredStr + '</div>';
         }
       });
     }

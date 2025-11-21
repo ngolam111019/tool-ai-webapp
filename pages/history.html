@@ -72,13 +72,29 @@ async function loadTransactionHistory() {
         "x-device-id": getDeviceId()
       }
     });
-    transactionCache = await res.json(); // ✅ lưu cache
-    
+
+    transactionCache = await res.json(); // lưu cache
+
+    // ➤ Kiểm tra dữ liệu rỗng hoặc không phải array
+    if (!Array.isArray(transactionCache) || transactionCache.length === 0) {
+      document.getElementById("transaction-list").innerHTML = `
+        <div class="text-center text-muted py-4">
+          Không có dữ liệu giao dịch
+        </div>`;
+      return;
+    }
+
     const html = transactionCache.map(renderTransaction).join('');
     document.getElementById("transaction-list").innerHTML = html;
-  
+
   } catch (err) {
     console.error("[loadTransactionHistory] Lỗi:", err);
+
+    // ➤ Trường hợp lỗi API cũng hiển thị "Không có dữ liệu"
+    document.getElementById("transaction-list").innerHTML = `
+      <div class="text-center text-muted py-4">
+        Không có dữ liệu giao dịch
+      </div>`;
   }
   finally {
     hideLoading();

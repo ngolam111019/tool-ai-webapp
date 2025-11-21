@@ -44,9 +44,6 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
-.scroll-container {
-  /*gap: 1rem;*/
-}
 
 .scroll-container .card {
   min-width: 250px;
