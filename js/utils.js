@@ -229,22 +229,22 @@ function renderAccountInfo(data) {
 
   if (document.getElementById("user-email"))
     document.getElementById("user-email").innerText = email;
-  
+
   document.getElementById("package-name").innerText = "📦 " + package.name;
   document.getElementById("package-expired").innerText = "⏳ Hết hạn: " + expired;
   document.getElementById("package-turns").innerText = `🎮 Lượt hôm nay: ${package.turns_used_today || 0}/${package.max_turns_per_day || 0}`;
-  
-  if(document.getElementById("package-gateways"))
+
+  if (document.getElementById("package-gateways"))
     document.getElementById("package-gateways").innerText = `🎲 Cổng game: ${package.gateways.join(', ')}`;
 
   if (document.getElementById("xu"))
     document.getElementById("xu").innerText = xu;
 }
 
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", function () {
   const btnUpgrade = document.getElementById("btnUpgrade");
   if (btnUpgrade) {
-    btnUpgrade.addEventListener("click", function(e) {
+    btnUpgrade.addEventListener("click", function (e) {
       e.preventDefault(); // tránh reload khi là <a>
       gtag('event', 'click_upgrade_button', {
         location: 'navbar',
@@ -254,3 +254,16 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   }
 });
+
+function getToken() {
+  return localStorage.getItem("accessToken") || "";
+}
+
+function getKey() {
+  const token = getToken();
+  return "notifications_" + token;
+}
+
+function getLastSyncKey() {
+  return "notifications_last_sync_" + getToken();
+}

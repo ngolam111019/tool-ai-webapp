@@ -101,7 +101,7 @@ function updateUnreadBadge() {
   const badge = document.getElementById("notiBadge");
   if (!badge) return;
 
-  const notiList = JSON.parse(localStorage.getItem("notifications") || "[]");
+  const notiList = JSON.parse(localStorage.getItem(getKey()) || "[]");
   const unreadCount = notiList.filter(n => !n.read).length;
 
   if (unreadCount > 0) {
