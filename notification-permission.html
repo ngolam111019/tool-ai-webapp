@@ -99,12 +99,7 @@
         if (permission === 'granted') {
           console.log("✅ Quyền đã được cấp");
           await registerPush();
-          if(usedTrial > 0) {
-            window.location.href = 'dashboard.html?page=tool';
-          }
-          else {
-            window.location.href = 'dashboard.html?page=intro-trial';
-          }
+         window.location.href = 'dashboard.html?page=tool';
         } else if (permission === 'denied') {
           deniedMsg.classList.remove('hidden');
           btnAllow.disabled = false;

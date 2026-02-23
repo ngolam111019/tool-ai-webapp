@@ -158,12 +158,8 @@
                     user_email: localStorage.getItem("userEmail")
                 });
 
-                showAlert("💰 Giao dịch thành công! Chuyển sang lịch sử để xem trạng thái.");
-                loadPage("history");
-            } else {
-                showAlert(data.message || "Giao dịch thất bại.");
-                loadPage("history");
             }
+            loadPage('payment-result', { is_success: data.is_success,amount: data.amount, tranid: data.tranid, date: data.confirmed_at, note: data.message });
         });
 
         // ⏱️ Đặt timeout ngắt socket sau 5 phút

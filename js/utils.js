@@ -238,7 +238,7 @@ function renderAccountInfo(data) {
     document.getElementById("package-gateways").innerText = `🎲 Cổng game: ${package.gateways.join(', ')}`;
 
   if (document.getElementById("xu"))
-    document.getElementById("xu").innerText = xu;
+    document.getElementById("xu").innerText = formatThousandsVNXu(xu);
 }
 
 document.addEventListener("DOMContentLoaded", function () {

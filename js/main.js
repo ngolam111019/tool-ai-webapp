@@ -416,3 +416,85 @@ async function handleGameResult(data, gatewayName) {
     if (btnFetch) btnFetch.textContent = "Lấy kết quả";
   }
 }
+
+async function initPaymentResultPage() {
+    // 1. Lấy tham số từ URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const isSuccess = urlParams.get("is_success") === "true"; // Chuyển string sang boolean
+    const amount = urlParams.get("amount") || "0";
+    const tranId = urlParams.get("tranid") || "---";
+    const date = urlParams.get("date") || formatDateTimeVN(new Date()); // Dùng hàm format có sẵn trong project của bạn
+    const note = urlParams.get("note") || "Nạp xu vào hệ thống.";
+
+    // 2. Cập nhật Giao diện dựa trên trạng thái (Thành công/Thất bại)
+    const statusIcon = document.getElementById("imgStatusIcon");
+    const statusText = document.getElementById("txtStatus");
+    const amountText = document.getElementById("txtAmount");
+
+    if (isSuccess) {
+        statusIcon.className = "fas fa-check-circle text-success";
+        statusText.innerText = "Nạp thành công";
+        statusText.className = "font-weight-bold mt-3 mb-1 text-success";
+    } else {
+        statusIcon.className = "fas fa-times-circle text-danger";
+        statusText.innerText = "Giao dịch thất bại";
+        statusText.className = "font-weight-bold mt-3 mb-1 text-danger";
+        amountText.className = "text-muted font-weight-bold mb-4"; // Đổi màu tiền nếu thất bại
+    }
+
+    // 3. Đổ dữ liệu vào các thẻ
+    if (amountText) amountText.innerText = formatThousandsVN(amount) + " đ";
+    if (document.getElementById("txtTranId")) document.getElementById("txtTranId").innerText = "- Mã GD: #" + tranId;
+    if (document.getElementById("txtDate")) document.getElementById("txtDate").innerText = "- Thời gian: " + formatDateTimeVN(date);
+    if (document.getElementById("txtNote")) document.getElementById("txtNote").innerText = "- Nội dung: \n" + note;
+
+    // 4. Gắn sự kiện cho các nút bấm
+    document.getElementById("btnTopupMore").onclick = () => {
+        loadPage("packages"); // Quay lại trang chọn gói
+    };
+
+    document.getElementById("btnUpgrade").onclick = () => {
+        loadPage("packages"); 
+    };
+
+    document.getElementById("btnHistory").onclick = () => {
+        loadPage("history");
+    };
+}
+
+/**
+ * Thực hiện API nâng cấp (Chuyển thể từ performUpgrade trong Android)
+ */
+async function performUpgrade(packageId) {
+    try {
+        showLoading(); // Hàm có sẵn trong ui.js
+        const token = localStorage.getItem("accessToken");
+        const res = await fetch(getUrl() + "/api/package/upgrade", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + token,
+                "x-device-id": getDeviceId()
+            },
+            body: JSON.stringify({ package_id: packageId })
+        });
+
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+            localStorage.setItem("forceRefresh", "true");
+            showAlert("🎉 Nâng cấp thành công!", "success");
+            loadPage("account"); // Chuyển về trang tài khoản sau khi nâng cấp
+        } else {
+            if (packageId == 1) {
+              localStorage.setItem("nangCapDungThu", "true");
+              localStorage.setItem("forceRefresh", "true");
+            }
+            showAlert(data.message || "Nâng cấp thất bại", "danger");
+        }
+    } catch (err) {
+        showAlert("Lỗi kết nối server: " + err.message, "danger");
+    } finally {
+        hideLoading();
+    }
+}

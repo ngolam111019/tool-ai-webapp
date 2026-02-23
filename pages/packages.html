@@ -1,4 +1,3 @@
-<!-- Card 3: Số xu -->
 <div class="card mb-4">
     <div class="card-body d-flex justify-content-between align-items-center">
         <div class="font-weight-bold">💰 Xu:</div>
@@ -6,8 +5,6 @@
     </div>
 </div>
 
-
-<!-- Card 2: Gói đang dùng -->
 <div class="card mb-3">
     <div class="card-body d-flex justify-content-between align-items-center">
         <div>
@@ -23,43 +20,39 @@
 </div>
 
 <script>
+    var _currentAccount = null; // Biến toàn cục lưu thông tin tài khoản để kiểm tra Xu
 
     loadPackages().then(data => {
         if (data) {
             renderPackages(data);
             _packageList = data;
-        }
-        else
+        } else {
             document.getElementById("package-list").innerHTML = "Lỗi không load được dữ liệu";
+        }
     });
 
     function renderPackages(packages) {
         const html = packages.map(pkg => {
-            var name = pkg.name;
-            if (pkg.is_best_saler == "1") {
-                name = name + " (⭐️ bán chạy)";
-            }
-
-            if (pkg.is_gift == "1") {
-                name = name + " (🎁 bí kíp)";
-            }
+            let name = pkg.name;
+            if (pkg.is_best_saler == "1") name += " (⭐️ bán chạy)";
+            if (pkg.is_gift == "1") name += " (🎁 bí kíp)";
 
             return `
                 <div class="card shadow-sm" style="min-width: 250px; background-color: ${pkg.bg_color || '#343a40'};">
                     <div class="card-body">
-                    <h5 class="card-title" style="color: ${pkg.color || '#fff'}">${name}</h5>` +
-                (pkg.price_2 > 0 ? `
-                    <p class="card-text text-danger small" id="countdown-${pkg.id}"></p>
-                    <p class="card-text h6" style="text-decoration: line-through">${formatThousandsVNXu(pkg.price_2) || ''}</p>` : ``) + `
-                    <p class="card-text text-danger h4">${formatThousandsVNXu(pkg.price) || ''}</p>
-                    <p class="card-text h6">${getExpiredInfo(pkg) || ''}</p>
-                    <p class="card-text">${getDescription(pkg) || ''}</p>
-                    <div class="text-center">
-                        <button class="btn btn-sm text-light" style="background-color: ${pkg.color || '#fff'}" onclick="xacNhanThanhToan('${pkg.id}')">Nâng cấp ngay</button>
+                        <h5 class="card-title" style="color: ${pkg.color || '#fff'}">${name}</h5>
+                        ${pkg.price_2 > 0 ? `
+                            <p class="card-text text-danger small" id="countdown-${pkg.id}"></p>
+                            <p class="card-text h6" style="text-decoration: line-through" id="price2-${pkg.id}">${formatThousandsVNXu(pkg.price_2)}</p>` : ''}
+                        <p class="card-text text-danger h4">${formatThousandsVNXu(pkg.price)}</p>
+                        <p class="card-text h6">${getExpiredInfo(pkg)}</p>
+                        <p class="card-text">${getDescription(pkg)}</p>
+                        <div class="text-center">
+                            <button class="btn btn-sm text-light" style="background-color: ${pkg.color || '#fff'}" 
+                                onclick="xacNhanThanhToan('${pkg.id}')">Nâng cấp ngay</button>
                         </div>
                     </div>
-                </div>
-                `;
+                </div>`;
         }).join("");
 
         document.getElementById("package-list").innerHTML = html;
@@ -70,162 +63,134 @@
         });
     }
 
+    /**
+     * Logic quyết định nâng cấp (Decision Engine)
+     * Được port từ logic PackageListActivity.java
+     */
     function xacNhanThanhToan(goiId) {
-
-        const goi = _packageList.find(p => p.id == goiId);
-        if (!goi) return;
-        if (confirm(`Xác nhận nâng cấp gói: ${goi.name} với giá ${(goi.price / 1000).toLocaleString()}k xu?`)) {
-            //window.location.href = `payment.html?goi=${goiId}`;
-            loadPage('payment', { id: goiId });
-        }
-    }
-
-    function napXu() {
-        const current = parseInt(localStorage.getItem("xu") || "0");
-        localStorage.setItem("xu", current + 5000000); // +5000k xu
-        //renderPackages();
-    }
-
-    function muaGoi(goiId) {
-        const xu = parseInt(localStorage.getItem("xu") || "0");
-        const goi = packages.find(p => p.id === goiId);
-        if (!goi) return;
-
-        if (xu < goi.price) {
-            showAlert("Bạn không đủ xu để nâng cấp.");
+        if (!_currentAccount || !_packageList) {
+            showAlert("Đang tải dữ liệu tài khoản, vui lòng thử lại sau.");
             return;
         }
 
-        // Trừ xu và lưu gói
-        localStorage.setItem("xu", xu - goi.price);
-        const now = new Date().toISOString();
-        localStorage.setItem("goiDaMua", JSON.stringify({
-            id: goi.id,
-            name: goi.name,
-            expiresAt: new Date(Date.now() + goi.duration * 86400000).toISOString(),
-            muaLuc: now
-        }));
-        showAlert("Nâng cấp thành công: " + goi.name);
-        //renderPackages();
-    }
+        const goi = _packageList.find(p => p.id == goiId);
+        if (!goi) return;
 
-    loadAccountInfo().then(data => {
-        if (data)
-            renderAccountInfo(data);
-        else
-            document.getElementById("account-info").innerHTML = "<p class='text-danger'>Không thể tải thông tin tài khoản.</p>";
-    });
-    function getDescription(pkg) {
-        let description = pkg.description;
+        const xuHienTai = _currentAccount.xu || 0;
+        const giaGoi = goi.price;
 
-        if (description.includes("{{gateways_str}}")) {
-            let gatewaysStr = "";
-
-            if (pkg.gateways.length > 1) {
-                gatewaysStr = "các cổng game " + pkg.gateways.join(", ");
-            } else if (pkg.gateways.length === 1) {
-                gatewaysStr = "cổng game " + pkg.gateways[0];
+        if (xuHienTai >= giaGoi) {
+            // KỊCH BẢN 1: Đủ Xu -> Nâng cấp trực tiếp (DIRECT_UPGRADE)
+            if (confirm(`Bạn đang có ${formatThousandsVNXu(xuHienTai)}. Xác nhận dùng ${formatThousandsVNXu(giaGoi)} để nâng cấp gói ${goi.name}?`)) {
+                performUpgrade(goi.id); // Gọi hàm này trong main.js
             }
+        } else {
+            // KỊCH BẢN 2: Thiếu Xu
+            const soTienThieu = giaGoi - xuHienTai;
 
-            description = description.replace("{{gateways_str}}", gatewaysStr);
-        }
-
-        let useOneDay = "";
-
-        if (description.includes("{{duration_days_str}}")) {
-            let durationDaysStr = "";
-
-            if (pkg.duration_days > 1) {
-                durationDaysStr = pkg.duration_days + " ngày";
-            } else if (pkg.duration_days === 1) {
-                durationDaysStr = "24 giờ";
-                useOneDay = ", (Lưu ý: chỉ dùng trong 24 giờ)";
-            }
-
-            description = description.replace("{{duration_days_str}}", durationDaysStr);
-        }
-
-        if (description.includes("{{max_turns_per_day_str}}")) {
-            let maxTurnsStr = "";
-
-            if (pkg.max_turns_per_day > 0) {
-                maxTurnsStr = pkg.max_turns_per_day + " ván/ngày" + useOneDay;
+            if (soTienThieu > 2000000) {
+                // Thiếu > 2M: Chỉ nạp thêm (ONLY_RECHARGE)
+                if (confirm(`Số dư Xu không đủ. Bạn cần nạp thêm ít nhất ${formatThousandsVNXu(soTienThieu)}. Đi tới trang nạp Xu?`)) {
+                    loadPage('payment', { id: goiId });
+                }
             } else {
-                maxTurnsStr = "không giới hạn";
+                // Thiếu <= 2M: Nạp số thiếu và nâng cấp luôn (RECHARGE_AND_UPGRADE)
+                if (confirm(`Bạn còn thiếu ${formatThousandsVNXu(soTienThieu)}. Bạn có muốn nạp thêm và nâng cấp gói ${goi.name} ngay?`)) {
+                    // Truyền tham số amount sang payment.html để tạo QR chính xác số tiền thiếu
+                    loadPage('payment', { id: goiId, amount: soTienThieu });
+                }
             }
-
-            description = description.replace("{{max_turns_per_day_str}}", maxTurnsStr);
         }
-
-        return description;
     }
+
+    // Load thông tin tài khoản và lưu vào biến toàn cục
+    loadAccountInfo().then(data => {
+        if (data) {
+            _currentAccount = data; // Lưu lại để xacNhanThanhToan sử dụng
+            renderAccountInfo(data);
+        } else {
+            const accInfo = document.getElementById("account-info");
+            if (accInfo) accInfo.innerHTML = "<p class='text-danger'>Không thể tải thông tin tài khoản.</p>";
+        }
+    });
+
+    // --- Các hàm phụ trợ (giữ nguyên logic cũ của bạn) ---
+    function getDescription(pkg) {
+        let desc = pkg.description;
+        if (desc.includes("{{gateways_str}}")) {
+            const gatewaysStr = pkg.gateways.length > 1 ? "các cổng game " + pkg.gateways.join(", ") : "cổng game " + pkg.gateways[0];
+            desc = desc.replace("{{gateways_str}}", gatewaysStr);
+        }
+        if (desc.includes("{{duration_days_str}}")) {
+            const durStr = pkg.duration_days > 1 ? pkg.duration_days + " ngày" : "24 giờ";
+            desc = desc.replace("{{duration_days_str}}", durStr);
+        }
+        if (desc.includes("{{max_turns_per_day_str}}")) {
+            const maxTurnsStr = pkg.max_turns_per_day > 0 ? pkg.max_turns_per_day + " ván/ngày" : "không giới hạn";
+            desc = desc.replace("{{max_turns_per_day_str}}", maxTurnsStr);
+        }
+        return desc;
+    }
+
     function getExpiredInfo(pkg) {
         return "Sử dụng " + pkg.duration_days + " ngày - " + pkg.max_turns_per_day + " lượt/ngày";
     }
 
-    // ===============================
-    // 🔥 COUNTDOWN ƯU ĐÃI LẶP VÒNG 24H
-    // ===============================
     function initCountdownForPackages(packages) {
         packages.forEach(pkg => {
             const countdownKey = "countdown_pkg_" + pkg.id;
             let expiredAt = localStorage.getItem(countdownKey);
-
             if (!expiredAt) {
-                expiredAt = Date.now() + 24 * 60 * 60 * 1000; // 24h
+                expiredAt = Date.now() + 24 * 60 * 60 * 1000;
                 localStorage.setItem(countdownKey, expiredAt);
             } else {
                 expiredAt = parseInt(expiredAt);
             }
-
             startCountdown(pkg, expiredAt);
         });
     }
 
     function startCountdown(pkg, expiredAt) {
         const el = document.getElementById("countdown-" + pkg.id);
+        const elPrice2 = document.getElementById("price2-" + pkg.id);
         if (!el) return;
-
+        
         const price = parseInt(pkg.price);
         const price2 = parseInt(pkg.price_2 || 0);
-
-        let percent = 0;
-        if (price2 > 0 && price < price2) {
-            percent = Math.round((1 - price / price2) * 100);
+        if (price2 > price) {
+            const percent = (price2 > 0 && price < price2) ? Math.round((1 - price / price2) * 100) : 0;
+            setInterval(() => {
+                const now = Date.now();
+                let diff = expiredAt - now;
+                if (diff <= 0) {
+                    expiredAt = Date.now() + 24 * 60 * 60 * 1000;
+                    localStorage.setItem("countdown_pkg_" + pkg.id, expiredAt);
+                    diff = expiredAt - now;
+                }
+                const h = Math.floor(diff / 3600000).toString().padStart(2, '0');
+                const m = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0');
+                const s = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0');
+                el.innerHTML = `⏳ Ưu đãi giảm ${percent}% – còn: ${h}:${m}:${s}`;
+            }, 1000);
         }
-
-        const timer = setInterval(() => {
-            const now = Date.now();
-            let diff = expiredAt - now;
-
-            // ❗️Khi hết hạn 24h -> bắt đầu lại vòng mới 24h
-            if (diff <= 0) {
-                expiredAt = Date.now() + 24 * 60 * 60 * 1000;
-                localStorage.setItem("countdown_pkg_" + pkg.id, expiredAt);
-                diff = expiredAt - now;
+        else if (price2 <= 10) {
+            if (localStorage.getItem("nangCapDungThu") == "true") {
+                el.innerHTML = `⏳ Đã bán hết 1000/1000 suất`;
             }
-
-            const h = Math.floor(diff / 3600000);
-            diff %= 3600000;
-
-            const m = Math.floor(diff / 60000);
-            diff %= 60000;
-
-            const s = Math.floor(diff / 1000);
-
-            el.innerHTML =
-                `⏳ Ưu đãi giảm ${percent}% – còn: ` +
-                `${h.toString().padStart(2, '0')}:` +
-                `${m.toString().padStart(2, '0')}:` +
-                `${s.toString().padStart(2, '0')}`;
-
-        }, 1000);
+            else {
+                el.innerHTML = `⏳ Chỉ còn ${price2} suất (Đã có ${1000 - price2} người đăng ký) trong 30 ngày qua`;
+            }
+            if (elPrice2) elPrice2.innerHTML = ''; 
+        }
+        else {
+            if (elPrice2) elPrice2.innerHTML = ''; 
+        }
+        /* } */
     }
 
-    // Gọi countdown sau renderPackages
     var _oldRenderPackages = renderPackages;
     renderPackages = function (data) {
         _oldRenderPackages(data);
         setTimeout(() => initCountdownForPackages(data), 200);
-    }
+    };
 </script>

@@ -1,0 +1,58 @@
+<div class="container mt-3">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center p-4">
+                    
+                    <div id="statusIconContainer" class="mt-4">
+                        <i id="imgStatusIcon" class="fas fa-check-circle text-success" style="font-size: 80px;"></i>
+                    </div>
+
+                    <h4 id="txtStatus" class="font-weight-bold mt-3 mb-1">Nạp thành công</h4>
+                    
+                    <h2 id="txtAmount" class="text-primary font-weight-bold mb-4">999.000 đ</h2>
+
+                    <div class="transaction-details text-muted mb-4 text-left">
+                        <p id="txtTranId" class="mb-1 small">Mã giao dịch: #123456789</p>
+                        <p id="txtDate" class="mb-1 small">Thời gian: 23/02/2026 09:18</p>
+                        <p id="txtNote" class="mt-3 font-italic small">
+                            Nội dung: Nạp xu vào hệ thống Tool AI
+                        </p>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="action-buttons">
+                        <button id="btnTopupMore" class="btn btn-primary btn-block py-2 mb-3" onclick="loadPage('packages')">
+                            <i class="fas fa-coins mr-2"></i> Nạp thêm Xu
+                        </button>
+                        
+                        <button id="btnUpgrade" class="btn btn-success btn-block py-2 mb-3" onclick="loadPage('packages')">
+                            <i class="fas fa-star mr-2"></i> Nâng cấp gói
+                        </button>
+                        
+                        <button id="btnHistory" class="btn btn-outline-secondary btn-block py-2" onclick="loadPage('history')">
+                            <i class="fas fa-file-invoice mr-2"></i> Lịch sử giao dịch
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Tùy chỉnh thêm để giống style mobile của app */
+    #imgStatusIcon {
+        display: inline-block;
+        transition: transform 0.3s ease;
+    }
+    .card {
+        border-radius: 15px;
+    }
+    .btn {
+        border-radius: 10px;
+        font-weight: 600;
+    }
+</style>

@@ -48,6 +48,9 @@ function loadPage(pageName, params = {}) {
         case "notifications":
           if (typeof initNotificationsPage === "function") initNotificationsPage();
           break;
+        case "payment-result":
+          if (typeof initPaymentResultPage === "function") initPaymentResultPage();
+          break;
       }
       hideLoader();
 

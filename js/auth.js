@@ -106,12 +106,7 @@ function handleAuthResponse(data) {
         window.location.href = nextUrl;
       }
       else if (Notification.permission == "granted") {
-        if(data.usedTrial > 0){
-          window.location.href = "dashboard.html";
-        }
-        else {
-          window.location.href = "dashboard.html?page=intro-trial";
-        }
+        window.location.href = "dashboard.html";
       } else {
         window.location.href = nextUrl;
       }
